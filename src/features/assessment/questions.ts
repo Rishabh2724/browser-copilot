@@ -1,5 +1,73 @@
 import type { BorrowerProfile } from "../../types/borrower";
 
+export const LOAN_TYPES_BY_PURPOSE = {
+  vehicle: [
+    {
+      label: "Two-wheeler loan",
+      value: "two_wheeler",
+    },
+    {
+      label: "Personal loan",
+      value: "personal",
+    },
+  ],
+
+  home: [
+    {
+      label: "Home loan",
+      value: "home",
+    },
+    {
+      label: "Loan against property",
+      value: "lap",
+    },
+  ],
+
+  business: [
+    {
+      label: "Business loan",
+      value: "business",
+    },
+    {
+      label: "Loan against property",
+      value: "lap",
+    },
+  ],
+
+  personal: [
+    {
+      label: "Personal loan",
+      value: "personal",
+    },
+    {
+      label: "Gold loan",
+      value: "gold",
+    },
+  ],
+
+  education: [
+    {
+      label: "Personal loan",
+      value: "personal",
+    },
+  ],
+
+  debt_repayment: [
+    {
+      label: "Personal loan",
+      value: "personal",
+    },
+    {
+      label: "Gold loan",
+      value: "gold",
+    },
+    {
+      label: "Loan against property",
+      value: "lap",
+    },
+  ],
+} as const;
+
 export type QuestionType =
   | "currency"
   | "number"
@@ -19,6 +87,12 @@ export interface Question {
   type: QuestionType;
   required: boolean;
   options?: QuestionOption[];
+  getOptions?: (
+  answers: Record<
+    string,
+    string | number | boolean | undefined
+  >
+) => QuestionOption[];
   min?: number;
   max?: number;
   step?: number;
@@ -107,47 +181,33 @@ export const QUESTIONS: Question[] = [
   // =====================================================
 
   {
-    id: "loanType",
-    category: "Loan goal",
-    text: "What type of loan are you considering?",
-    description:
-      "Different loan products have different typical costs, structures and repayment expectations.",
-    type: "select",
-    required: true,
-    options: [
-      {
-        label: "Personal loan",
-        value: "personal",
-      },
-      {
-        label: "Business loan",
-        value: "business",
-      },
-      {
-        label: "Loan against property",
-        value: "lap",
-      },
-      {
-        label: "Gold loan",
-        value: "gold",
-      },
-      {
-        label: "Two-wheeler loan",
-        value: "two_wheeler",
-      },
-      {
-        label: "Home loan",
-        value: "home",
-      },
-    ],
-    affects: [
-      "sanction",
-      "safeAmount",
-      "rate",
-      "emi",
-      "confidence",
-    ],
+  id: "loanType",
+  category: "Loan",
+  text: "What type of loan are you considering?",
+  description:
+    "We'll show loan products that fit the purpose you selected.",
+  type: "select",
+  required: true,
+  getOptions: (answers) => {
+    const purpose = String(
+      answers.purpose ?? ""
+    );
+
+    return (
+      LOAN_TYPES_BY_PURPOSE[
+        purpose as keyof typeof LOAN_TYPES_BY_PURPOSE
+      ] ?? []
+    ).map((option) => ({
+      label: option.label,
+      value: option.value,
+    }));
   },
+  affects: [
+    "decision",
+    "sanction",
+    "rate",
+  ],
+},
 
   // =====================================================
   // 4. AMOUNT

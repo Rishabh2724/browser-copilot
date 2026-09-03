@@ -32,8 +32,16 @@ export interface Question {
   type: QuestionType;
 
   required: boolean;
-
+ 
   options?: QuestionOption[];
+   
+  getOptions?: (
+  answers: Record<
+    string,
+    string | number | boolean | undefined
+  >
+) => QuestionOption[];
+
 
   showWhen?: (profile: Partial<BorrowerProfile>) => boolean;
 

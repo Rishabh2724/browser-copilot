@@ -361,12 +361,15 @@ const handleNext = () => {
             )}
           </div>
 
-          <QuestionCard
-            question={currentQuestion}
-            value={currentValue}
-            onChange={updateAnswer}
-          />
-
+         <QuestionCard
+  question={currentQuestion}
+  value={currentValue}
+  options={
+    currentQuestion.getOptions?.(answers) ??
+    currentQuestion.options
+  }
+  onChange={updateAnswer}
+/>
           {validationError && (
             <div className="validation-error">
               <strong>
