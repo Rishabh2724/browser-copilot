@@ -104,54 +104,143 @@ export function AssessmentFlow() {
     () => buildBorrowerProfile(answers),
     [answers]
   );
+  const shouldStopForNoCashFlow = (
+  nextAnswers: Answers
+) => {
+  const income = Number(
+    nextAnswers.monthlyIncome ?? 0
+  );
 
-  const handleNext = () => {
-    if (!currentQuestion) {
-      return;
-    }
+  const expenses = Number(
+    nextAnswers.householdExpenses ?? 0
+  );
 
-    if (!canContinue) {
-      setValidationError(
-        "Please provide an answer to continue."
-      );
+  const existingEmi = Number(
+    nextAnswers.existingEmi ?? 0
+  );
 
-      return;
-    }
+  /*
+   * We only trigger the hard stop once all three
+   * affordability inputs have actually been answered.
+   */
+  const hasIncome =
+    nextAnswers.monthlyIncome !== undefined &&
+    income > 0;
 
-    const validation =
-      validateAnswer(
-        currentQuestion.id,
-        currentValue,
-        answers
-      );
+  const hasExpenses =
+    nextAnswers.householdExpenses !== undefined;
 
-    if (!validation.valid) {
-      setValidationError(
-        validation.message ??
-          "Please correct your answer."
-      );
+  const hasExistingEmi =
+    nextAnswers.existingEmi !== undefined;
 
-      return;
-    }
+  if (
+    !hasIncome ||
+    !hasExpenses ||
+    !hasExistingEmi
+  ) {
+    return false;
+  }
 
-    setValidationError(null);
+  return (
+    income - expenses - existingEmi <= 0
+  );
+};
+const handleNext = () => {
+  if (!currentQuestion) {
+    return;
+  }
 
-    if (
-      currentIndex <
-      visibleQuestions.length - 1
-    ) {
-      setCurrentIndex(
-        (index) => index + 1
-      );
+  if (!canContinue) {
+    setValidationError(
+      "Please provide an answer to continue."
+    );
 
-      return;
-    }
+    return;
+  }
+
+  const validation = validateAnswer(
+    currentQuestion.id,
+    currentValue,
+    answers
+  );
+
+  if (!validation.valid) {
+    setValidationError(
+      validation.message ??
+        "Please correct your answer."
+    );
+
+    return;
+  }
+
+  setValidationError(null);
+
+  /*
+   * IMPORTANT:
+   *
+   * The current answer has already been selected in the UI,
+   * but React state updates are asynchronous.
+   *
+   * Therefore we create the next answer object manually
+   * so the hard-stop check uses the latest value immediately.
+   */
+  const nextAnswers: Answers = {
+    ...answers,
+    [currentQuestion.id]: currentValue,
+  };
+
+  /*
+   * HARD STOP:
+   *
+   * Income - expenses - existing EMI <= 0
+   *
+   * Example:
+   *
+   * Income       ₹10,000
+   * Expenses      ₹9,000
+   * Existing EMI  ₹1,000
+   * --------------------
+   * Remaining          ₹0
+   *
+   * Don't ask unnecessary questions.
+   */
+  if (
+    shouldStopForNoCashFlow(nextAnswers)
+  ) {
+    const stoppedProfile =
+      buildBorrowerProfile(nextAnswers);
 
     const assessment =
-      assessBorrower(profile);
+      assessBorrower(stoppedProfile);
 
+    setAnswers(nextAnswers);
     setResult(assessment);
-  };
+
+    return;
+  }
+
+  /*
+   * Normal questionnaire progression.
+   */
+  if (
+    currentIndex <
+    visibleQuestions.length - 1
+  ) {
+    setCurrentIndex(
+      (index) => index + 1
+    );
+
+    return;
+  }
+
+  /*
+   * Questionnaire completed normally.
+   */
+  const assessment =
+    assessBorrower(profile);
+
+  setResult(assessment);
+};
 
   const handleBack = () => {
     if (currentIndex > 0) {
