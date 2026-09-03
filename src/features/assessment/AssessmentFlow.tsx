@@ -638,75 +638,160 @@ function AssessmentResults({
           </div>
         </section>
 
-        {/* NEGOTIATION CARD */}
-        <section className="negotiation-card">
+        {/* BORROWING GUIDANCE */}
+{result.decision === "dont_borrow" ? (
+  <section className="avoid-borrowing-card">
 
-          <div className="negotiation-eyebrow">
-            NEGOTIATION CARD
+    <div className="avoid-borrowing-eyebrow">
+      BORROWING GUIDANCE
+    </div>
+
+    <h2>
+      Don't borrow right now
+    </h2>
+
+    <p className="avoid-borrowing-description">
+      Your current income is already fully
+      committed to household expenses and
+      existing obligations. Taking another
+      EMI would leave no conservative
+      repayment room.
+    </p>
+
+    <div className="avoid-borrowing-metrics">
+
+      <div>
+        <span>
+          Remaining cash flow
+        </span>
+
+        <strong>
+          ₹0
+        </strong>
+      </div>
+
+      <div>
+        <span>
+          Safe new EMI
+        </span>
+
+        <strong>
+          {formatMoney(
+            result.emiCeiling
+          )}
+        </strong>
+      </div>
+
+      <div>
+        <span>
+          Recommended borrowing
+        </span>
+
+        <strong>
+          {formatMoney(
+            result.recommendedAmount
+          )}
+        </strong>
+      </div>
+
+    </div>
+
+    <div className="avoid-borrowing-actions">
+
+      <div className="avoid-borrowing-label">
+        WHAT COULD CHANGE THIS?
+      </div>
+
+      <ul>
+        <li>
+          Reduce existing monthly
+          debt obligations.
+        </li>
+
+        <li>
+          Increase reliable monthly
+          income.
+        </li>
+
+        <li>
+          Reassess once you have
+          more repayment capacity.
+        </li>
+      </ul>
+
+    </div>
+
+  </section>
+) : (
+  <section className="negotiation-card">
+
+    <div className="negotiation-eyebrow">
+      NEGOTIATION CARD
+    </div>
+
+    <h2>
+      What to take to the lender
+    </h2>
+
+    <div className="negotiation-values">
+
+      <CardValue
+        label="Fair rate"
+        value={`${result.negotiationCard.fairRate.min}% – ${result.negotiationCard.fairRate.max}%`}
+      />
+
+      <CardValue
+        label="Safe EMI"
+        value={formatMoney(
+          result.negotiationCard.safeEmi
+        )}
+      />
+
+      <CardValue
+        label="Target amount"
+        value={formatMoney(
+          result.negotiationCard.recommendedAmount
+        )}
+      />
+
+    </div>
+
+    <div className="negotiation-content">
+
+      <div className="apr-reminder">
+        Ask the lender for the{" "}
+        <strong>
+          all-in APR
+        </strong>
+        , including processing fee
+        and other mandatory charges,
+        before accepting the offer.
+      </div>
+
+      {result.negotiationCard
+        .lenderQuoteResponse && (
+        <div className="what-to-say">
+
+          <div className="what-to-say-label">
+            WHAT TO SAY
           </div>
 
-          <h2>
-            What to take to the lender
-          </h2>
+          <p>
+            “
+            {
+              result.negotiationCard
+                .lenderQuoteResponse
+            }
+            ”
+          </p>
 
-          <div className="negotiation-values">
+        </div>
+      )}
 
-            <CardValue
-              label="Fair rate"
-              value={`${result.negotiationCard.fairRate.min}% – ${result.negotiationCard.fairRate.max}%`}
-            />
+    </div>
 
-            <CardValue
-              label="Safe EMI"
-              value={formatMoney(
-                result.negotiationCard.safeEmi
-              )}
-            />
-
-            <CardValue
-              label="Target amount"
-              value={formatMoney(
-                result.negotiationCard.recommendedAmount
-              )}
-            />
-
-          </div>
-
-          <div className="negotiation-content">
-
-            <div className="apr-reminder">
-              Ask the lender for the{" "}
-              <strong>
-                all-in APR
-              </strong>
-              , including processing fee
-              and other mandatory charges,
-              before accepting the offer.
-            </div>
-
-            {result.negotiationCard
-              .lenderQuoteResponse && (
-              <div className="what-to-say">
-
-                <div className="what-to-say-label">
-                  WHAT TO SAY
-                </div>
-
-                <p>
-                  “
-                  {
-                    result.negotiationCard
-                      .lenderQuoteResponse
-                  }
-                  ”
-                </p>
-
-              </div>
-            )}
-
-          </div>
-
-        </section>
+  </section>
+)}
 
         {/* RESTART */}
         <div className="restart-container">

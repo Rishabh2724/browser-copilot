@@ -1149,3 +1149,123 @@ input:focus-visible {
     font-size: 24px;
   }
 }
+/* =========================================================
+   DON'T BORROW GUIDANCE
+   ========================================================= */
+
+.avoid-borrowing-card {
+  margin-top: 16px;
+  padding: 30px;
+
+  border: 1px solid #fecaca;
+  border-radius: 20px;
+
+  background: #fffafa;
+}
+
+.avoid-borrowing-eyebrow {
+  color: #b91c1c;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.avoid-borrowing-card h2 {
+  margin: 7px 0 0;
+
+  color: #7f1d1d;
+
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+
+.avoid-borrowing-description {
+  max-width: 680px;
+
+  margin-top: 12px;
+
+  color: #64748b;
+
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.avoid-borrowing-metrics {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+
+  margin-top: 24px;
+}
+
+.avoid-borrowing-metrics > div {
+  padding: 16px;
+
+  border: 1px solid #fee2e2;
+  border-radius: 13px;
+
+  background: #ffffff;
+}
+
+.avoid-borrowing-metrics span {
+  display: block;
+
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avoid-borrowing-metrics strong {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #0f172a;
+
+  font-size: 20px;
+  font-weight: 750;
+}
+
+.avoid-borrowing-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+
+  border-top: 1px solid #fee2e2;
+}
+
+.avoid-borrowing-label {
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.avoid-borrowing-actions ul {
+  margin: 10px 0 0;
+  padding-left: 19px;
+
+  color: #475569;
+
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@media (max-width: 700px) {
+  .avoid-borrowing-card {
+    padding: 22px;
+  }
+
+  .avoid-borrowing-card h2 {
+    font-size: 24px;
+  }
+
+  .avoid-borrowing-metrics {
+    grid-template-columns: 1fr;
+  }
+}
