@@ -21,39 +21,93 @@ export function determineBorrowDecision(
   profile: BorrowerProfile,
   stressTest?: StressResult
 ): BorrowDecisionResult {
-  const affordability = calculateAffordability(profile);
-  const safeAmount = calculateSafeAmount(profile);
-  const riskSignals = calculateRiskSignals(profile);
+  const affordability =
+    calculateAffordability(profile);
+
+  const safeAmount =
+    calculateSafeAmount(profile);
+
+  const riskSignals =
+    calculateRiskSignals(profile);
 
   const reasons: string[] = [];
 
-  const criticalCreditRisk = riskSignals.some(
-    (signal) => signal.id === "very_weak_credit"
-  );
+  /*
+   * HARD STOP #1
+   *
+   * If household expenses + existing EMIs
+   * consume all available income, there is
+   * no remaining cash flow for a new EMI.
+   *
+   * Example:
+   * Income       ₹10,000
+   * Expenses      ₹9,000
+   * Existing EMI  ₹1,000
+   * --------------------
+   * Remaining          ₹0
+   */
+  const remainingCashFlow =
+    affordability.normalizedIncome -
+    profile.monthlyHouseholdExpenses -
+    affordability.existingEmi;
 
-  const criticalDebtRisk = riskSignals.some(
-    (signal) => signal.id === "critical_existing_debt"
-  );
-
-  const repaymentIssue = riskSignals.some(
-    (signal) => signal.id === "repayment_issue"
-  );
-
-  if (affordability.safeNewEmiCapacity <= 0) {
+  if (remainingCashFlow <= 0) {
     return {
       decision: "dont_borrow",
       reasons: [
-        "Existing debt already consumes the conservative repayment capacity.",
+        "Your household expenses and existing EMIs already consume your available income.",
+        `After household expenses and existing EMIs, your remaining monthly cash flow is ₹${Math.round(
+          Math.max(0, remainingCashFlow)
+        ).toLocaleString("en-IN")}. There is no conservative capacity for another EMI.`,
       ],
     };
   }
 
-  // Very weak credit becomes a hard stop only when combined
-  // with another material repayment risk.
+  /*
+   * HARD STOP #2
+   *
+   * The affordability engine says there is
+   * no safe capacity for a new EMI.
+   */
+  if (
+    affordability.safeNewEmiCapacity <= 0
+  ) {
+    return {
+      decision: "dont_borrow",
+      reasons: [
+        "Existing financial obligations already consume the conservative repayment capacity.",
+        "There is no remaining conservative capacity for a new EMI after accounting for income, household expenses and existing debt.",
+      ],
+    };
+  }
+
+  const criticalCreditRisk =
+    riskSignals.some(
+      (signal) =>
+        signal.id === "very_weak_credit"
+    );
+
+  const criticalDebtRisk =
+    riskSignals.some(
+      (signal) =>
+        signal.id ===
+        "critical_existing_debt"
+    );
+
+  const repaymentIssue =
+    riskSignals.some(
+      (signal) =>
+        signal.id === "repayment_issue"
+    );
+
+  /*
+   * VERY WEAK CREDIT + ANOTHER MATERIAL RISK
+   */
   if (
     criticalCreditRisk &&
     (
-      stressTest?.affordabilityStatus === "unsafe" ||
+      stressTest?.affordabilityStatus ===
+        "unsafe" ||
       criticalDebtRisk ||
       repaymentIssue
     )
@@ -67,7 +121,13 @@ export function determineBorrowDecision(
     };
   }
 
-  if (safeAmount.max < profile.loan.amountWanted * 0.5) {
+  /*
+   * REQUESTED AMOUNT IS FAR ABOVE SAFE CAPACITY
+   */
+  if (
+    safeAmount.max <
+    profile.loan.amountWanted * 0.5
+  ) {
     return {
       decision: "dont_borrow",
       reasons: [
@@ -76,7 +136,13 @@ export function determineBorrowDecision(
     };
   }
 
-  if (safeAmount.max < profile.loan.amountWanted) {
+  /*
+   * REQUESTED AMOUNT IS ABOVE SAFE CAPACITY
+   */
+  if (
+    safeAmount.max <
+    profile.loan.amountWanted
+  ) {
     reasons.push(
       "The requested amount is higher than the estimated safe borrowing capacity."
     );
@@ -87,7 +153,10 @@ export function determineBorrowDecision(
       );
     }
 
-    if (stressTest?.affordabilityStatus === "unsafe") {
+    if (
+      stressTest?.affordabilityStatus ===
+      "unsafe"
+    ) {
       reasons.push(
         "The proposed repayment becomes unsafe under a 20% income-drop stress test."
       );
@@ -99,7 +168,13 @@ export function determineBorrowDecision(
     };
   }
 
-  if (stressTest?.affordabilityStatus === "unsafe") {
+  /*
+   * BASELINE IS AFFORDABLE BUT STRESS TEST FAILS
+   */
+  if (
+    stressTest?.affordabilityStatus ===
+    "unsafe"
+  ) {
     return {
       decision: "borrow_less",
       reasons: [
@@ -114,6 +189,9 @@ export function determineBorrowDecision(
     };
   }
 
+  /*
+   * VERY WEAK CREDIT
+   */
   if (criticalCreditRisk) {
     return {
       decision: "borrow_less",
@@ -124,7 +202,13 @@ export function determineBorrowDecision(
     };
   }
 
-  if (stressTest?.affordabilityStatus === "tight") {
+  /*
+   * BORROW
+   */
+  if (
+    stressTest?.affordabilityStatus ===
+    "tight"
+  ) {
     reasons.push(
       "The requested amount is affordable at baseline but becomes tight under a 20% income-drop stress test."
     );
