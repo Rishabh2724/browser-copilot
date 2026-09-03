@@ -465,15 +465,29 @@ function AssessmentResults({
             />
           </div>
 
-          <div className="mt-6 rounded-xl bg-white/10 p-4 text-sm text-slate-300">
-            Ask the lender for the{" "}
-            <strong className="text-white">
-              all-in APR
-            </strong>
-            , including processing fee and
-            other mandatory charges, before
-            accepting the offer.
-          </div>
+          <div className="mt-6 space-y-4">
+  <div className="rounded-xl bg-white/10 p-4 text-sm text-slate-300">
+    Ask the lender for the{" "}
+    <strong className="text-white">
+      all-in APR
+    </strong>
+    , including processing fee and
+    other mandatory charges, before
+    accepting the offer.
+  </div>
+
+  {result.negotiationCard.lenderQuoteResponse && (
+    <div className="rounded-xl border border-white/20 bg-white p-5 text-slate-900">
+      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        What to say
+      </div>
+
+      <p className="mt-2 text-sm leading-6">
+        “{result.negotiationCard.lenderQuoteResponse}”
+      </p>
+    </div>
+  )}
+</div>
         </section>
 
         <div className="mt-8 text-center">

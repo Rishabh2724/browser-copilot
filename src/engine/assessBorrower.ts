@@ -129,6 +129,16 @@ export function assessBorrower(
         )} because it considers income, household expenses and existing EMIs.`,
     },
   ];
+  const lenderQuoteResponse =
+  buildLenderQuoteResponse(
+    decision.decision,
+    rate.fairRate,
+    apr,
+    Math.round(
+      affordability.safeNewEmiCapacity
+    ),
+    recommendedAmount
+  );
 
   return {
     decision: decision.decision,
@@ -157,19 +167,21 @@ export function assessBorrower(
     reasons,
 
     negotiationCard: {
-      fairRate: rate.fairRate,
+  fairRate: rate.fairRate,
 
-      apr,
+  apr,
 
-      safeEmi:
-        Math.round(
-          affordability.safeNewEmiCapacity
-        ),
+  safeEmi:
+    Math.round(
+      affordability.safeNewEmiCapacity
+    ),
 
-      recommendedAmount,
+  recommendedAmount,
 
-      reasons,
-    },
+  reasons,
+
+  lenderQuoteResponse,
+},
   };
 }
 
@@ -179,4 +191,43 @@ function getProcessingFee(
   const offer = profile.offers?.[0];
 
   return offer?.processingFee ?? 0;
+}
+
+function buildLenderQuoteResponse(
+  decision: AssessmentResult["decision"],
+  fairRate: { min: number; max: number },
+  apr: { min: number; max: number },
+  safeEmi: number,
+  recommendedAmount: number
+): string {
+  const formatMoney = (value: number) =>
+    `₹${Math.round(value).toLocaleString("en-IN")}`;
+
+  if (decision === "dont_borrow") {
+    return (
+      "I am not comfortable taking this loan on these terms. " +
+      "Please show me any lower-cost or secured alternatives and the " +
+      "full all-in APR before I consider borrowing."
+    );
+  }
+
+  if (decision === "borrow_less") {
+    return (
+      `I want to keep the loan around ${formatMoney(
+        recommendedAmount
+      )} and the new EMI at or below ${formatMoney(
+        safeEmi
+      )}. Please quote an all-in APR within or below the estimated ` +
+      `${apr.min}%–${apr.max}% range, with all mandatory fees disclosed.`
+    );
+  }
+
+  return (
+    `I am comfortable considering around ${formatMoney(
+      recommendedAmount
+    )}. Please quote an all-in APR around ${apr.min}%–${apr.max}% ` +
+    `or better, with the EMI kept at or below ${formatMoney(
+      safeEmi
+    )} and all mandatory charges disclosed.`
+  );
 }
