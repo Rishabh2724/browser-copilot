@@ -8,14 +8,19 @@ export type Answers = Record<
 export function buildBorrowerProfile(
   answers: Answers
 ): BorrowerProfile {
-  const income =
-    Number(answers.monthlyIncome ?? 0);
+  const income = Number(
+    answers.monthlyIncome ?? 0
+  );
 
   const employmentType =
     answers.employmentType as BorrowerProfile["employmentType"];
 
   const loanType =
     answers.loanType as BorrowerProfile["loan"]["type"];
+
+  const existingEmi = Number(
+    answers.existingEmi ?? 0
+  );
 
   return {
     age: Number(answers.age ?? 0),
@@ -28,28 +33,32 @@ export function buildBorrowerProfile(
       stability:
         (answers.incomeStability ??
           "variable") as BorrowerProfile["monthlyIncome"]["stability"],
+      documentedMonthly:
+        answers.annualItrIncome !== undefined
+          ? Number(answers.annualItrIncome) / 12
+          : undefined,
     },
 
-    monthlyHouseholdExpenses:
-      Number(answers.householdExpenses ?? 0),
+    monthlyHouseholdExpenses: Number(
+      answers.householdExpenses ?? 0
+    ),
 
     existingLoans:
-      Number(answers.existingEmi ?? 0) > 0
+      existingEmi > 0
         ? [
             {
               type: "personal",
               outstanding: 0,
-              emi: Number(
-                answers.existingEmi ?? 0
-              ),
+              emi: existingEmi,
             },
           ]
         : [],
 
     loan: {
       type: loanType,
-      amountWanted:
-        Number(answers.loanAmount ?? 0),
+      amountWanted: Number(
+        answers.loanAmount ?? 0
+      ),
       purpose: String(
         answers.purpose ?? ""
       ),
@@ -71,21 +80,48 @@ export function buildBorrowerProfile(
     collateral:
       answers.collateralAvailable !== undefined
         ? {
-            available:
-              Boolean(
-                answers.collateralAvailable
-              ),
+            available: Boolean(
+              answers.collateralAvailable
+            ),
           }
         : undefined,
 
     upcomingExpenses:
       answers.upcomingExpenses !== undefined
-        ? Number(answers.upcomingExpenses)
+        ? Number(
+            answers.upcomingExpenses
+          )
         : undefined,
 
     pastBounces:
       answers.pastBounces !== undefined
         ? Number(answers.pastBounces)
+        : undefined,
+
+    employmentTenureMonths:
+      answers.employmentTenureMonths !== undefined
+        ? Number(
+            answers.employmentTenureMonths
+          )
+        : undefined,
+
+    business:
+      employmentType === "self_employed"
+        ? {
+            yearsOperating:
+              answers.businessYears !== undefined
+                ? Number(
+                    answers.businessYears
+                  )
+                : undefined,
+
+            annualItrIncome:
+              answers.annualItrIncome !== undefined
+                ? Number(
+                    answers.annualItrIncome
+                  )
+                : undefined,
+          }
         : undefined,
   };
 }
