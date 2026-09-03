@@ -22,7 +22,9 @@ interface QuestionCardProps {
 function formatIndianNumber(
   value: string | number
 ): string {
-  if (value === "") return "";
+  if (value === "") {
+    return "";
+  }
 
   const numericValue = Number(
     String(value).replace(/,/g, "")
@@ -32,7 +34,9 @@ function formatIndianNumber(
     return String(value);
   }
 
-  return numericValue.toLocaleString("en-IN");
+  return numericValue.toLocaleString(
+    "en-IN"
+  );
 }
 
 export function QuestionCard({
@@ -41,85 +45,90 @@ export function QuestionCard({
   options,
   onChange,
 }: QuestionCardProps) {
-  /*
-   * Use dynamically generated options when available.
-   * Otherwise fall back to the static question.options.
-   */
   const selectOptions =
     options ??
     question.options ??
     [];
 
   /*
-   * SELECT QUESTION
+   * ---------------------------------------------------------
+   * SELECT
+   * ---------------------------------------------------------
+   *
+   * A select question MUST remain a select question.
+   * Never fall through to the number input if options
+   * are missing.
    */
-  if (
-    question.type === "select" &&
-    selectOptions.length > 0
-  ) {
-    return (
-      <div className="question-card">
-        <div className="question-header">
-          <h2>{question.text}</h2>
+  if (question.type === "select") {
+    if (selectOptions.length === 0) {
+      return (
+        <div className="question-card-content">
+          <div className="validation-error">
+            <strong>
+              No suitable loan products found
+            </strong>
 
-          {question.description && (
-            <p className="question-description">
-              {question.description}
-            </p>
-          )}
+            <span>
+              We could not find a suitable loan
+              product for the purpose selected.
+              Please go back and choose another
+              purpose.
+            </span>
+          </div>
         </div>
+      );
+    }
 
+    return (
+      <div className="question-card-content">
         <div className="question-options">
-          {selectOptions.map((option) => {
-            const selected =
-              value === option.value;
+          {selectOptions.map(
+            (option) => {
+              const selected =
+                value === option.value;
 
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className={`question-option ${
-                  selected
-                    ? "selected"
-                    : ""
-                }`}
-                onClick={() =>
-                  onChange(option.value)
-                }
-              >
-                <span className="question-option-label">
-                  {option.label}
-                </span>
-
-                {selected && (
-                  <span className="question-option-check">
-                    ✓
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`question-option ${
+                    selected
+                      ? "selected"
+                      : ""
+                  }`}
+                  onClick={() =>
+                    onChange(
+                      option.value
+                    )
+                  }
+                >
+                  <span className="question-option-label">
+                    {option.label}
                   </span>
-                )}
-              </button>
-            );
-          })}
+
+                  {selected && (
+                    <span className="question-option-check">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            }
+          )}
         </div>
       </div>
     );
   }
 
   /*
-   * BOOLEAN QUESTION
+   * ---------------------------------------------------------
+   * BOOLEAN
+   * ---------------------------------------------------------
    */
+
   if (question.type === "boolean") {
     return (
-      <div className="question-card">
-        <div className="question-header">
-          <h2>{question.text}</h2>
-
-          {question.description && (
-            <p className="question-description">
-              {question.description}
-            </p>
-          )}
-        </div>
-
+      <div className="question-card-content">
         <div className="boolean-options">
           <button
             type="button"
@@ -166,8 +175,11 @@ export function QuestionCard({
   }
 
   /*
-   * CURRENCY / NUMBER QUESTION
+   * ---------------------------------------------------------
+   * NUMBER / CURRENCY
+   * ---------------------------------------------------------
    */
+
   const numericValue =
     typeof value === "number" ||
     typeof value === "string"
@@ -175,17 +187,7 @@ export function QuestionCard({
       : "";
 
   return (
-    <div className="question-card">
-      <div className="question-header">
-        <h2>{question.text}</h2>
-
-        {question.description && (
-          <p className="question-description">
-            {question.description}
-          </p>
-        )}
-      </div>
-
+    <div className="question-card-content">
       <div className="number-input-wrapper">
         {question.type === "currency" && (
           <span className="currency-symbol">
@@ -223,7 +225,9 @@ export function QuestionCard({
               Number(rawValue);
 
             if (
-              Number.isNaN(parsedValue)
+              Number.isNaN(
+                parsedValue
+              )
             ) {
               return;
             }
@@ -235,7 +239,8 @@ export function QuestionCard({
 
       {numericValue !== "" && (
         <p className="formatted-number">
-          {question.type === "currency"
+          {question.type ===
+          "currency"
             ? `₹${formatIndianNumber(
                 numericValue
               )}`

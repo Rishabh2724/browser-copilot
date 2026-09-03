@@ -23,7 +23,7 @@ export const LOAN_TYPES_BY_PURPOSE = {
     },
   ],
 
-  business: [
+  productive: [
     {
       label: "Business loan",
       value: "business",
@@ -34,7 +34,7 @@ export const LOAN_TYPES_BY_PURPOSE = {
     },
   ],
 
-  personal: [
+  essential: [
     {
       label: "Personal loan",
       value: "personal",
@@ -42,6 +42,13 @@ export const LOAN_TYPES_BY_PURPOSE = {
     {
       label: "Gold loan",
       value: "gold",
+    },
+  ],
+
+  discretionary: [
+    {
+      label: "Personal loan",
+      value: "personal",
     },
   ],
 

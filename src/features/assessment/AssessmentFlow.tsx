@@ -34,40 +34,148 @@ export function AssessmentFlow() {
     useState<AssessmentResult | null>(null);
 
   /*
-   * Only questions whose conditions are currently
-   * satisfied are included in the flow.
+   * Questions are recalculated whenever an answer changes.
+   *
+   * This is important because some questions are conditional.
    */
   const visibleQuestions = useMemo(
     () => getVisibleQuestions(answers),
     [answers]
   );
 
-  const currentQuestion: Question | undefined =
-    visibleQuestions[currentIndex];
+  /*
+   * Keep the current index inside the currently visible
+   * question list.
+   *
+   * This prevents the UI from pointing at a question that
+   * disappeared after an earlier answer changed.
+   */
+  const safeCurrentIndex = Math.min(
+    currentIndex,
+    Math.max(
+      visibleQuestions.length - 1,
+      0
+    )
+  );
 
-  const progress =
-    visibleQuestions.length === 0
-      ? 0
-      : Math.round(
-          ((currentIndex + 1) /
-            visibleQuestions.length) *
-            100
-        );
+  const currentQuestion:
+    | Question
+    | undefined =
+    visibleQuestions[safeCurrentIndex];
 
   const currentValue =
     currentQuestion
       ? answers[currentQuestion.id]
       : undefined;
 
+  const progress =
+    visibleQuestions.length === 0
+      ? 0
+      : Math.round(
+          ((safeCurrentIndex + 1) /
+            visibleQuestions.length) *
+            100
+        );
+
   /*
-   * Do not use a truthy check here.
+   * Do not use a truthy check.
    *
-   * 0 can be a legitimate financial answer.
+   * 0 is a valid financial answer.
    */
   const canContinue =
     currentValue !== undefined &&
     currentValue !== "";
 
+  /*
+   * Build the borrower profile from the latest answers.
+   *
+   * This is useful for conditional questions, but we must
+   * NOT use this stale profile for the final submission.
+   */
+  const profile = useMemo(
+    () => buildBorrowerProfile(answers),
+    [answers]
+  );
+
+  /*
+   * ---------------------------------------------------------
+   * HARD STOP: NO REMAINING CASH FLOW
+   * ---------------------------------------------------------
+   *
+   * If:
+   *
+   * income - household expenses - existing EMI <= 0
+   *
+   * there is no conservative capacity for another EMI.
+   *
+   * We stop immediately after the existing-EMI question.
+   */
+  const shouldStopForNoCashFlow = (
+    nextAnswers: Answers
+  ): boolean => {
+    const income = Number(
+      nextAnswers.monthlyIncome ?? 0
+    );
+
+    const expenses = Number(
+      nextAnswers.householdExpenses ?? 0
+    );
+
+    const existingEmi = Number(
+      nextAnswers.existingEmi ?? 0
+    );
+
+    const hasIncome =
+      nextAnswers.monthlyIncome !==
+        undefined &&
+      income > 0;
+
+    const hasExpenses =
+      nextAnswers.householdExpenses !==
+      undefined;
+
+    const hasExistingEmi =
+      nextAnswers.existingEmi !==
+      undefined;
+
+    /*
+     * Do not stop before all three inputs exist.
+     */
+    if (
+      !hasIncome ||
+      !hasExpenses ||
+      !hasExistingEmi
+    ) {
+      return false;
+    }
+
+    return (
+      income -
+        expenses -
+        existingEmi <=
+      0
+    );
+  };
+
+  /*
+   * ---------------------------------------------------------
+   * ANSWER UPDATE
+   * ---------------------------------------------------------
+   *
+   * We also clear dependent answers when their parent answer
+   * changes.
+   *
+   * Example:
+   *
+   * Vehicle
+   *   -> Two-wheeler loan
+   *
+   * user goes back and changes:
+   *
+   * Home
+   *
+   * The old two_wheeler selection must disappear.
+   */
   const updateAnswer = (
     value: AnswerValue
   ) => {
@@ -75,16 +183,20 @@ export function AssessmentFlow() {
       return;
     }
 
+    const questionId =
+      currentQuestion.id;
+
     const validation =
       validateAnswer(
-        currentQuestion.id,
+        questionId,
         value,
         answers
       );
 
     if (
       !validation.valid &&
-      validation.severity === "error"
+      validation.severity ===
+        "error"
     ) {
       setValidationError(
         validation.message ??
@@ -94,164 +206,203 @@ export function AssessmentFlow() {
       setValidationError(null);
     }
 
-    setAnswers((previous) => ({
-      ...previous,
-      [currentQuestion.id]: value,
-    }));
-  };
+    setAnswers((previous) => {
+      const nextAnswers: Answers = {
+        ...previous,
+        [questionId]: value,
+      };
 
-  const profile = useMemo(
-    () => buildBorrowerProfile(answers),
-    [answers]
-  );
-  const shouldStopForNoCashFlow = (
-  nextAnswers: Answers
-) => {
-  const income = Number(
-    nextAnswers.monthlyIncome ?? 0
-  );
+      /*
+       * PURPOSE changed
+       * ----------------
+       *
+       * loanType depends on purpose.
+       *
+       * Example:
+       * Vehicle -> two_wheeler
+       * Home    -> home
+       *
+       * Never allow the previous product to survive
+       * after the purpose changes.
+       */
+      if (questionId === "purpose") {
+        delete nextAnswers.loanType;
+      }
 
-  const expenses = Number(
-    nextAnswers.householdExpenses ?? 0
-  );
+      /*
+       * CREDIT SCORE KNOWN changed to NO
+       * --------------------------------
+       *
+       * There is no reason to retain an old score.
+       */
+      if (
+        questionId ===
+          "creditScoreKnown" &&
+        value === false
+      ) {
+        delete nextAnswers.creditScore;
+      }
 
-  const existingEmi = Number(
-    nextAnswers.existingEmi ?? 0
-  );
-
-  /*
-   * We only trigger the hard stop once all three
-   * affordability inputs have actually been answered.
-   */
-  const hasIncome =
-    nextAnswers.monthlyIncome !== undefined &&
-    income > 0;
-
-  const hasExpenses =
-    nextAnswers.householdExpenses !== undefined;
-
-  const hasExistingEmi =
-    nextAnswers.existingEmi !== undefined;
-
-  if (
-    !hasIncome ||
-    !hasExpenses ||
-    !hasExistingEmi
-  ) {
-    return false;
-  }
-
-  return (
-    income - expenses - existingEmi <= 0
-  );
-};
-const handleNext = () => {
-  if (!currentQuestion) {
-    return;
-  }
-
-  if (!canContinue) {
-    setValidationError(
-      "Please provide an answer to continue."
-    );
-
-    return;
-  }
-
-  const validation = validateAnswer(
-    currentQuestion.id,
-    currentValue,
-    answers
-  );
-
-  if (!validation.valid) {
-    setValidationError(
-      validation.message ??
-        "Please correct your answer."
-    );
-
-    return;
-  }
-
-  setValidationError(null);
-
-  /*
-   * IMPORTANT:
-   *
-   * The current answer has already been selected in the UI,
-   * but React state updates are asynchronous.
-   *
-   * Therefore we create the next answer object manually
-   * so the hard-stop check uses the latest value immediately.
-   */
-  const nextAnswers: Answers = {
-    ...answers,
-    [currentQuestion.id]: currentValue,
+      return nextAnswers;
+    });
   };
 
   /*
-   * HARD STOP:
-   *
-   * Income - expenses - existing EMI <= 0
-   *
-   * Example:
-   *
-   * Income       ₹10,000
-   * Expenses      ₹9,000
-   * Existing EMI  ₹1,000
-   * --------------------
-   * Remaining          ₹0
-   *
-   * Don't ask unnecessary questions.
+   * ---------------------------------------------------------
+   * NEXT
+   * ---------------------------------------------------------
    */
-  if (
-    shouldStopForNoCashFlow(nextAnswers)
-  ) {
-    const stoppedProfile =
-      buildBorrowerProfile(nextAnswers);
+  const handleNext = () => {
+    if (!currentQuestion) {
+      return;
+    }
 
-    const assessment =
-      assessBorrower(stoppedProfile);
+    /*
+     * Required-answer check.
+     */
+    if (!canContinue) {
+      setValidationError(
+        "Please provide an answer to continue."
+      );
 
+      return;
+    }
+
+    /*
+     * Validate the current answer.
+     */
+    const validation =
+      validateAnswer(
+        currentQuestion.id,
+        currentValue,
+        answers
+      );
+
+    if (!validation.valid) {
+      setValidationError(
+        validation.message ??
+          "Please correct your answer."
+      );
+
+      return;
+    }
+
+    setValidationError(null);
+
+    /*
+     * IMPORTANT:
+     *
+     * React state updates are asynchronous.
+     *
+     * Therefore answers may still contain the previous
+     * value here.
+     *
+     * Always use nextAnswers for calculations that happen
+     * immediately after pressing Continue.
+     */
+    const nextAnswers: Answers = {
+      ...answers,
+      [currentQuestion.id]:
+        currentValue,
+    };
+
+    /*
+     * -------------------------------------------------------
+     * HARD STOP
+     * -------------------------------------------------------
+     */
+    if (
+      shouldStopForNoCashFlow(
+        nextAnswers
+      )
+    ) {
+      const stoppedProfile =
+        buildBorrowerProfile(
+          nextAnswers
+        );
+
+      const assessment =
+        assessBorrower(
+          stoppedProfile
+        );
+
+      /*
+       * Store the latest answers as well.
+       */
+      setAnswers(nextAnswers);
+
+      setResult(assessment);
+
+      return;
+    }
+
+    /*
+     * -------------------------------------------------------
+     * QUESTIONNAIRE COMPLETE
+     * -------------------------------------------------------
+     *
+     * THIS FIXES THE SERIOUS BUG.
+     *
+     * Previously this used:
+     *
+     *   assessBorrower(profile)
+     *
+     * where profile was derived from stale answers.
+     *
+     * We now build the profile from nextAnswers.
+     */
+    if (
+      safeCurrentIndex >=
+      visibleQuestions.length - 1
+    ) {
+      const finalProfile =
+        buildBorrowerProfile(
+          nextAnswers
+        );
+
+      const assessment =
+        assessBorrower(
+          finalProfile
+        );
+
+      setAnswers(nextAnswers);
+      setResult(assessment);
+
+      return;
+    }
+
+    /*
+     * Save the latest answer before moving forward.
+     */
     setAnswers(nextAnswers);
-    setResult(assessment);
 
-    return;
-  }
-
-  /*
-   * Normal questionnaire progression.
-   */
-  if (
-    currentIndex <
-    visibleQuestions.length - 1
-  ) {
     setCurrentIndex(
       (index) => index + 1
     );
-
-    return;
-  }
-
-  /*
-   * Questionnaire completed normally.
-   */
-  const assessment =
-    assessBorrower(profile);
-
-  setResult(assessment);
-};
-
-  const handleBack = () => {
-    if (currentIndex > 0) {
-      setValidationError(null);
-
-      setCurrentIndex(
-        (index) => index - 1
-      );
-    }
   };
 
+  /*
+   * ---------------------------------------------------------
+   * BACK
+   * ---------------------------------------------------------
+   */
+  const handleBack = () => {
+    if (safeCurrentIndex <= 0) {
+      return;
+    }
+
+    setValidationError(null);
+
+    setCurrentIndex(
+      (index) => index - 1
+    );
+  };
+
+  /*
+   * ---------------------------------------------------------
+   * RESTART
+   * ---------------------------------------------------------
+   */
   const restart = () => {
     setAnswers({});
     setCurrentIndex(0);
@@ -266,6 +417,9 @@ const handleNext = () => {
     return null;
   }
 
+  /*
+   * Results screen.
+   */
   if (result) {
     return (
       <AssessmentResults
@@ -320,7 +474,8 @@ const handleNext = () => {
         <div className="progress-section">
           <div className="progress-meta">
             <span>
-              Question {currentIndex + 1} of{" "}
+              Question{" "}
+              {safeCurrentIndex + 1} of{" "}
               {visibleQuestions.length}
             </span>
 
@@ -361,15 +516,23 @@ const handleNext = () => {
             )}
           </div>
 
-         <QuestionCard
-  question={currentQuestion}
-  value={currentValue}
-  options={
-    currentQuestion.getOptions?.(answers) ??
-    currentQuestion.options
-  }
-  onChange={updateAnswer}
-/>
+          <QuestionCard
+            question={
+              currentQuestion
+            }
+            value={currentValue}
+            options={
+              currentQuestion
+                .getOptions?.(
+                  answers
+                ) ??
+              currentQuestion.options
+            }
+            onChange={
+              updateAnswer
+            }
+          />
+
           {validationError && (
             <div className="validation-error">
               <strong>
@@ -387,8 +550,12 @@ const handleNext = () => {
 
             <button
               type="button"
-              onClick={handleBack}
-              disabled={currentIndex === 0}
+              onClick={
+                handleBack
+              }
+              disabled={
+                safeCurrentIndex === 0
+              }
               className="back-button"
             >
               ← Back
@@ -396,11 +563,15 @@ const handleNext = () => {
 
             <button
               type="button"
-              disabled={!canContinue}
-              onClick={handleNext}
+              disabled={
+                !canContinue
+              }
+              onClick={
+                handleNext
+              }
               className="continue-button"
             >
-              {currentIndex ===
+              {safeCurrentIndex ===
               visibleQuestions.length - 1
                 ? "See my assessment"
                 : "Continue →"}
@@ -411,15 +582,21 @@ const handleNext = () => {
 
         {/* FOOTER */}
         <footer className="assessment-footer">
-          <span>Private by design</span>
+          <span>
+            Private by design
+          </span>
 
           <span>•</span>
 
-          <span>No bureau pull</span>
+          <span>
+            No bureau pull
+          </span>
 
           <span>•</span>
 
-          <span>No login</span>
+          <span>
+            No login
+          </span>
 
           <span>•</span>
 
