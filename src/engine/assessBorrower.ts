@@ -11,12 +11,15 @@ import { calculateTenureOptions } from "./tenureOptions";
 import { calculateAPR } from "./apr";
 import { runIncomeStressTest } from "./stressTest";
 import { calculateEMI } from "./emi";
+import { assessProductFit } from "./productFit";
 
 export function assessBorrower(
   profile: BorrowerProfile
 ): AssessmentResult {
-  // 1. Calculate the core affordability and risk inputs.
+  // 1. Calculate the core affordability and product-fit inputs.
   const affordability = calculateAffordability(profile);
+
+  const productFit = assessProductFit(profile);
 
   const lenderAmount = calculateLenderAmount(profile);
 
@@ -38,9 +41,6 @@ export function assessBorrower(
     tenureOptions[tenureOptions.length - 1];
 
   // 3. Run a preliminary stress test using the requested amount.
-  //
-  // This gives the decision engine information about whether
-  // the requested loan survives a 20% income-drop scenario.
   const initialStressTest =
     runIncomeStressTest(
       profile,
@@ -68,21 +68,23 @@ export function assessBorrower(
           profile.loan.amountWanted,
           safeAmount.max
         );
+
   const recommendedTenureOptions =
-  calculateTenureOptions(
-    profile,
-    recommendedAmount
-  );
+    calculateTenureOptions(
+      profile,
+      recommendedAmount
+    );
+
   // 6. Select a tenure that fits the conservative EMI ceiling.
   const recommendedTenure =
-  recommendedTenureOptions.find(
-    (option) =>
-      option.emi <=
-      affordability.safeNewEmiCapacity
-  ) ??
-  recommendedTenureOptions[
-    recommendedTenureOptions.length - 1
-  ];
+    recommendedTenureOptions.find(
+      (option) =>
+        option.emi <=
+        affordability.safeNewEmiCapacity
+    ) ??
+    recommendedTenureOptions[
+      recommendedTenureOptions.length - 1
+    ];
 
   // 7. Calculate APR using the recommended amount.
   const apr =
@@ -128,17 +130,28 @@ export function assessBorrower(
           "en-IN"
         )} because it considers income, household expenses and existing EMIs.`,
     },
+
+    // Add product-fit explanation only when useful.
+    ...(!productFit.suitable
+      ? [
+          {
+            title: "Product fit",
+            explanation: productFit.reason,
+          },
+        ]
+      : []),
   ];
+
   const lenderQuoteResponse =
-  buildLenderQuoteResponse(
-    decision.decision,
-    rate.fairRate,
-    apr,
-    Math.round(
-      affordability.safeNewEmiCapacity
-    ),
-    recommendedAmount
-  );
+    buildLenderQuoteResponse(
+      decision.decision,
+      rate.fairRate,
+      apr,
+      Math.round(
+        affordability.safeNewEmiCapacity
+      ),
+      recommendedAmount
+    );
 
   return {
     decision: decision.decision,
@@ -166,22 +179,26 @@ export function assessBorrower(
 
     reasons,
 
+    // NEW:
+    // Expose product-fit reasoning to the results UI.
+    productFit,
+
     negotiationCard: {
-  fairRate: rate.fairRate,
+      fairRate: rate.fairRate,
 
-  apr,
+      apr,
 
-  safeEmi:
-    Math.round(
-      affordability.safeNewEmiCapacity
-    ),
+      safeEmi:
+        Math.round(
+          affordability.safeNewEmiCapacity
+        ),
 
-  recommendedAmount,
+      recommendedAmount,
 
-  reasons,
+      reasons,
 
-  lenderQuoteResponse,
-},
+      lenderQuoteResponse,
+    },
   };
 }
 

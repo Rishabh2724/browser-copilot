@@ -54,6 +54,11 @@ export interface AssessmentResult {
   safeAmount: Range;
 
   recommendedAmount: number;
+  
+  productFit: {
+  suitable: boolean;
+  reason: string;
+};
 
   fairRate: Range;
 
