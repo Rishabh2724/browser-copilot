@@ -68,15 +68,21 @@ export function assessBorrower(
           profile.loan.amountWanted,
           safeAmount.max
         );
-
+  const recommendedTenureOptions =
+  calculateTenureOptions(
+    profile,
+    recommendedAmount
+  );
   // 6. Select a tenure that fits the conservative EMI ceiling.
   const recommendedTenure =
-    tenureOptions.find(
-      (option) =>
-        option.emi <=
-        affordability.safeNewEmiCapacity
-    ) ??
-    tenureOptions[tenureOptions.length - 1];
+  recommendedTenureOptions.find(
+    (option) =>
+      option.emi <=
+      affordability.safeNewEmiCapacity
+  ) ??
+  recommendedTenureOptions[
+    recommendedTenureOptions.length - 1
+  ];
 
   // 7. Calculate APR using the recommended amount.
   const apr =
@@ -142,7 +148,7 @@ export function assessBorrower(
         affordability.safeNewEmiCapacity
       ),
 
-    tenureOptions,
+    tenureOptions: recommendedTenureOptions,
 
     stressTest,
 

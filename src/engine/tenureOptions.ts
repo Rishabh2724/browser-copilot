@@ -1,5 +1,4 @@
 import type { BorrowerProfile } from "../types/borrower";
-import { calculateAffordability } from "./affordability";
 import { calculateFairRate } from "./rateBand";
 import { calculateEMI } from "./emi";
 
@@ -10,9 +9,9 @@ export interface TenureOption {
 }
 
 export function calculateTenureOptions(
-  profile: BorrowerProfile
+  profile: BorrowerProfile,
+  amount: number = profile.loan.amountWanted
 ): TenureOption[] {
-  const affordability = calculateAffordability(profile);
   const rate = calculateFairRate(profile);
 
   const annualRate =
@@ -20,7 +19,7 @@ export function calculateTenureOptions(
 
   return [36, 48, 60].map((months) => {
     const emi = calculateEMI(
-      profile.loan.amountWanted,
+      amount,
       annualRate,
       months
     );
@@ -28,7 +27,7 @@ export function calculateTenureOptions(
     const totalInterest =
       Math.max(
         0,
-        emi * months - profile.loan.amountWanted
+        emi * months - amount
       );
 
     return {
