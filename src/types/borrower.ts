@@ -36,6 +36,13 @@ export interface BorrowerProfile {
 
   employmentType: EmploymentType;
 
+  employmentTenureMonths?: number;
+
+business?: {
+  yearsOperating?: number;
+  annualItrIncome?: number;
+};
+
   monthlyIncome: {
     min: number;
     max: number;

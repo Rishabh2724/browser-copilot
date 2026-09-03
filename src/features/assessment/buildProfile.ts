@@ -33,10 +33,6 @@ export function buildBorrowerProfile(
       stability:
         (answers.incomeStability ??
           "variable") as BorrowerProfile["monthlyIncome"]["stability"],
-      documentedMonthly:
-        answers.annualItrIncome !== undefined
-          ? Number(answers.annualItrIncome) / 12
-          : undefined,
     },
 
     monthlyHouseholdExpenses: Number(
