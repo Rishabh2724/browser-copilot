@@ -12,47 +12,47 @@ export interface BorrowDecisionResult {
   reasons: string[];
 }
 
-export function determineBorrowDecision(
-  profile: BorrowerProfile
-): BorrowDecisionResult {
-  const affordability =
-    calculateAffordability(profile);
+interface StressResult {
+  affordabilityStatus: "safe" | "tight" | "unsafe";
+}
 
-  const safeAmount =
-    calculateSafeAmount(profile);
+export function determineBorrowDecision(
+  profile: BorrowerProfile,
+  stressTest?: StressResult
+): BorrowDecisionResult {
+  const affordability = calculateAffordability(profile);
+  const safeAmount = calculateSafeAmount(profile);
 
   const reasons: string[] = [];
 
-  if (
-    affordability.safeNewEmiCapacity <= 0
-  ) {
+  if (affordability.safeNewEmiCapacity <= 0) {
     return {
       decision: "dont_borrow",
       reasons: [
-        "Existing debt already consumes the conservative repayment capacity."
+        "Existing debt already consumes the conservative repayment capacity.",
       ],
     };
   }
 
-  if (
-    safeAmount.max <
-    profile.loan.amountWanted * 0.5
-  ) {
+  if (safeAmount.max < profile.loan.amountWanted * 0.5) {
     return {
       decision: "dont_borrow",
       reasons: [
-        "The requested amount is substantially above the estimated safe borrowing capacity."
+        "The requested amount is substantially above the estimated safe borrowing capacity.",
       ],
     };
   }
 
-  if (
-    safeAmount.max <
-    profile.loan.amountWanted
-  ) {
+  if (safeAmount.max < profile.loan.amountWanted) {
     reasons.push(
       "The requested amount is higher than the estimated safe borrowing capacity."
     );
+
+    if (stressTest?.affordabilityStatus === "unsafe") {
+      reasons.push(
+        "The proposed repayment becomes unsafe under a 20% income-drop stress test."
+      );
+    }
 
     return {
       decision: "borrow_less",
@@ -60,9 +60,25 @@ export function determineBorrowDecision(
     };
   }
 
-  reasons.push(
-    "The requested amount appears compatible with the estimated conservative repayment capacity."
-  );
+  if (stressTest?.affordabilityStatus === "unsafe") {
+    return {
+      decision: "borrow_less",
+      reasons: [
+        "The requested amount fits the baseline affordability estimate but becomes unsafe if income falls by 20%.",
+        "Reducing the amount or extending the repayment period can create more repayment room.",
+      ],
+    };
+  }
+
+  if (stressTest?.affordabilityStatus === "tight") {
+    reasons.push(
+      "The requested amount is affordable at baseline but becomes tight under a 20% income-drop stress test."
+    );
+  } else {
+    reasons.push(
+      "The requested amount appears compatible with the estimated conservative repayment capacity and passes the income stress test."
+    );
+  }
 
   return {
     decision: "borrow",

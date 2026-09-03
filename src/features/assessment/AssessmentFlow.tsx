@@ -3,11 +3,8 @@ import { useMemo, useState } from "react";
 import { assessBorrower } from "../../engine/assessBorrower";
 import type { AssessmentResult } from "../../types/assessment";
 import { validateAnswer } from "./validation";
-
-import {
-  QUESTIONS,
-  type Question,
-} from "./questions";
+import { getVisibleQuestions } from "./getNextQuestion";
+import type { Question } from "./questions";
 
 import {
   buildBorrowerProfile,
@@ -33,14 +30,22 @@ export function AssessmentFlow() {
   const [result, setResult] =
     useState<AssessmentResult | null>(null);
 
-  const currentQuestion: Question =
-    QUESTIONS[currentIndex];
+ const visibleQuestions = useMemo(
+  () => getVisibleQuestions(answers),
+  [answers]
+);
 
-  const progress = Math.round(
-    ((currentIndex + 1) / QUESTIONS.length) *
-      100
-  );
+const currentQuestion: Question =
+  visibleQuestions[currentIndex];
 
+const progress =
+  visibleQuestions.length === 0
+    ? 0
+    : Math.round(
+        ((currentIndex + 1) /
+          visibleQuestions.length) *
+          100
+      );
   const currentValue =
     answers[currentQuestion?.id];
 
@@ -105,10 +110,10 @@ const handleNext = () => {
 
   setValidationError(null);
 
-  if (
-    currentIndex <
-    QUESTIONS.length - 1
-  ) {
+if (
+  currentIndex <
+  visibleQuestions.length - 1
+) {
     setCurrentIndex(
       (index) => index + 1
     );
@@ -168,7 +173,7 @@ const handleNext = () => {
           <div className="mb-2 flex justify-between text-sm text-slate-500">
             <span>
               Question {currentIndex + 1} of{" "}
-              {QUESTIONS.length}
+              {visibleQuestions.length}
             </span>
 
             <span>{progress}%</span>
@@ -229,7 +234,7 @@ const handleNext = () => {
               className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {currentIndex ===
-              QUESTIONS.length - 1
+              visibleQuestions.length - 1
                 ? "See my assessment"
                 : "Continue"}
             </button>

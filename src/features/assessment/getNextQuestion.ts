@@ -3,19 +3,29 @@ import {
   type Question,
 } from "./questions";
 
-import type { Answers } from "./buildProfile";
+import {
+  buildBorrowerProfile,
+  type Answers,
+} from "./buildProfile";
 
 export function getVisibleQuestions(
   answers: Answers
 ): Question[] {
+  const profile = buildBorrowerProfile(answers);
+
   return QUESTIONS.filter((question) => {
+    // Credit score is special:
+    // only show the score input when the user explicitly
+    // said that they know their score.
+    if (question.id === "creditScore") {
+      return answers.creditScoreKnown === true;
+    }
+
     if (!question.showWhen) {
       return true;
     }
 
-    return question.showWhen(
-      buildVisibilityProfile(answers)
-    );
+    return question.showWhen(profile);
   });
 }
 
@@ -32,22 +42,4 @@ export function getNextQuestion(
         !answeredIds.includes(question.id)
     ) ?? null
   );
-}
-
-function buildVisibilityProfile(
-  answers: Answers
-) {
-  return {
-    employmentType:
-      answers.employmentType,
-
-    loan: {
-      type: answers.loanType,
-    },
-
-    creditScore:
-      answers.creditScoreKnown === true
-        ? answers.creditScore
-        : undefined,
-  } as any;
 }
