@@ -19,19 +19,15 @@ export function calculateRiskSignals(
 ): RiskSignal[] {
   const signals: RiskSignal[] = [];
 
-  const income =
-    getNormalizedIncome(profile);
+  const income = getNormalizedIncome(profile);
 
-  const existingEmi =
-    profile.existingLoans.reduce(
-      (sum, loan) => sum + loan.emi,
-      0
-    );
+  const existingEmi = profile.existingLoans.reduce(
+    (sum, loan) => sum + loan.emi,
+    0
+  );
 
   const existingDebtRatio =
-    income > 0
-      ? existingEmi / income
-      : 1;
+    income > 0 ? existingEmi / income : 1;
 
   if (existingDebtRatio >= 0.4) {
     signals.push({
@@ -51,10 +47,7 @@ export function calculateRiskSignals(
     });
   }
 
-  if (
-    profile.monthlyIncome.stability ===
-    "highly_variable"
-  ) {
+  if (profile.monthlyIncome.stability === "highly_variable") {
     signals.push({
       id: "income_volatility",
       severity: "high",
@@ -75,6 +68,39 @@ export function calculateRiskSignals(
       explanation:
         "A recent bounced payment is a warning sign when considering additional borrowing.",
     });
+  }
+
+  // Credit score is treated as a risk signal rather than an
+  // automatic rejection rule because lender eligibility
+  // thresholds vary by product.
+  if (profile.creditScore !== undefined) {
+    const score = profile.creditScore;
+
+    if (score < 550) {
+      signals.push({
+        id: "very_weak_credit",
+        severity: "critical",
+        title: "Very weak credit profile",
+        explanation:
+          `The entered credit score of ${score} is substantially below the assessment's fair-credit range, which can reduce lender options and increase borrowing cost.`,
+      });
+    } else if (score < 650) {
+      signals.push({
+        id: "weak_credit",
+        severity: "high",
+        title: "Weak credit profile",
+        explanation:
+          `The entered credit score of ${score} is below the assessment's fair-credit range, which can reduce lender options and increase borrowing cost.`,
+      });
+    } else if (score < 700) {
+      signals.push({
+        id: "fair_credit",
+        severity: "medium",
+        title: "Fair credit profile",
+        explanation:
+          `The entered credit score of ${score} is in the assessment's fair-credit range but may not qualify for the lowest borrowing rates.`,
+      });
+    }
   }
 
   return signals;
