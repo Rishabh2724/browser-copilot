@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { assessBorrower } from "../../engine/assessBorrower";
 import type { AssessmentResult } from "../../types/assessment";
+
 import { validateAnswer } from "./validation";
 import { getVisibleQuestions } from "./getNextQuestion";
 import type { Question } from "./questions";
@@ -22,112 +23,140 @@ type AnswerValue =
 export function AssessmentFlow() {
   const [answers, setAnswers] =
     useState<Answers>({});
+
   const [validationError, setValidationError] =
     useState<string | null>(null);
+
   const [currentIndex, setCurrentIndex] =
     useState(0);
 
   const [result, setResult] =
     useState<AssessmentResult | null>(null);
 
- const visibleQuestions = useMemo(
-  () => getVisibleQuestions(answers),
-  [answers]
-);
+  /*
+   * Only questions whose conditions are currently
+   * satisfied are included in the flow.
+   */
+  const visibleQuestions = useMemo(
+    () => getVisibleQuestions(answers),
+    [answers]
+  );
 
-const currentQuestion: Question =
-  visibleQuestions[currentIndex];
+  const currentQuestion: Question | undefined =
+    visibleQuestions[currentIndex];
 
-const progress =
-  visibleQuestions.length === 0
-    ? 0
-    : Math.round(
-        ((currentIndex + 1) /
-          visibleQuestions.length) *
-          100
-      );
+  const progress =
+    visibleQuestions.length === 0
+      ? 0
+      : Math.round(
+          ((currentIndex + 1) /
+            visibleQuestions.length) *
+            100
+        );
+
   const currentValue =
-    answers[currentQuestion?.id];
+    currentQuestion
+      ? answers[currentQuestion.id]
+      : undefined;
 
+  /*
+   * Do not use a truthy check here.
+   *
+   * 0 can be a legitimate financial answer.
+   */
   const canContinue =
     currentValue !== undefined &&
     currentValue !== "";
 
   const updateAnswer = (
-  value: AnswerValue
-) => {
-  const validation =
-    validateAnswer(
-      currentQuestion.id,
-      value,
-      answers
-    );
+    value: AnswerValue
+  ) => {
+    if (!currentQuestion) {
+      return;
+    }
 
-  if (
-    !validation.valid &&
-    validation.severity === "error"
-  ) {
-    setValidationError(
-      validation.message ?? "Invalid answer."
-    );
-  } else {
-    setValidationError(null);
-  }
+    const validation =
+      validateAnswer(
+        currentQuestion.id,
+        value,
+        answers
+      );
 
-  setAnswers((previous) => ({
-    ...previous,
-    [currentQuestion.id]: value,
-  }));
-};
+    if (
+      !validation.valid &&
+      validation.severity === "error"
+    ) {
+      setValidationError(
+        validation.message ??
+          "Invalid answer."
+      );
+    } else {
+      setValidationError(null);
+    }
+
+    setAnswers((previous) => ({
+      ...previous,
+      [currentQuestion.id]: value,
+    }));
+  };
 
   const profile = useMemo(
     () => buildBorrowerProfile(answers),
     [answers]
   );
 
-const handleNext = () => {
-  if (!canContinue) {
-    setValidationError(
-      "Please provide an answer to continue."
-    );
-    return;
-  }
+  const handleNext = () => {
+    if (!currentQuestion) {
+      return;
+    }
 
-  const validation =
-    validateAnswer(
-      currentQuestion.id,
-      currentValue,
-      answers
-    );
+    if (!canContinue) {
+      setValidationError(
+        "Please provide an answer to continue."
+      );
 
-  if (!validation.valid) {
-    setValidationError(
-      validation.message ??
-        "Please correct your answer."
-    );
-    return;
-  }
+      return;
+    }
 
-  setValidationError(null);
+    const validation =
+      validateAnswer(
+        currentQuestion.id,
+        currentValue,
+        answers
+      );
 
-if (
-  currentIndex <
-  visibleQuestions.length - 1
-) {
-    setCurrentIndex(
-      (index) => index + 1
-    );
-    return;
-  }
+    if (!validation.valid) {
+      setValidationError(
+        validation.message ??
+          "Please correct your answer."
+      );
 
-  const assessment =
-    assessBorrower(profile);
+      return;
+    }
 
-  setResult(assessment);
-};
+    setValidationError(null);
+
+    if (
+      currentIndex <
+      visibleQuestions.length - 1
+    ) {
+      setCurrentIndex(
+        (index) => index + 1
+      );
+
+      return;
+    }
+
+    const assessment =
+      assessBorrower(profile);
+
+    setResult(assessment);
+  };
 
   const handleBack = () => {
     if (currentIndex > 0) {
+      setValidationError(null);
+
       setCurrentIndex(
         (index) => index - 1
       );
@@ -137,8 +166,16 @@ if (
   const restart = () => {
     setAnswers({});
     setCurrentIndex(0);
+    setValidationError(null);
     setResult(null);
   };
+
+  /*
+   * Safety guard.
+   */
+  if (!currentQuestion && !result) {
+    return null;
+  }
 
   if (result) {
     return (
@@ -150,38 +187,65 @@ if (
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-10">
-          <div className="mb-2 text-sm font-semibold tracking-wide text-slate-500">
-            BORROWER COPILOT
+    <main className="assessment-page">
+      <div className="assessment-container">
+
+        {/* BRAND */}
+        <header className="assessment-header">
+          <div className="brand-row">
+            <div className="brand-mark">
+              BC
+            </div>
+
+            <div>
+              <div className="brand-name">
+                Borrower Copilot
+              </div>
+
+              <div className="brand-caption">
+                Borrowing decision assistant
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Know what you can afford
-            before you borrow.
-          </h1>
+          <div className="assessment-intro">
+            <div className="assessment-kicker">
+              BORROWING ASSESSMENT
+            </div>
 
-          <p className="mt-3 max-w-2xl text-slate-600">
-            A transparent borrowing assessment
-            based on your income, expenses,
-            existing debt and loan goal.
-          </p>
+            <h1>
+              Know what you can afford
+              before you borrow.
+            </h1>
+
+            <p>
+              Answer a few questions about
+              your income, expenses and
+              borrowing goal. We'll estimate
+              a safer borrowing range and EMI.
+            </p>
+          </div>
         </header>
 
-        <div className="mb-8">
-          <div className="mb-2 flex justify-between text-sm text-slate-500">
+        {/* PROGRESS */}
+        <div className="progress-section">
+          <div className="progress-meta">
             <span>
               Question {currentIndex + 1} of{" "}
               {visibleQuestions.length}
             </span>
 
-            <span>{progress}%</span>
+            <span>
+              {progress}%
+            </span>
           </div>
 
-          <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="progress-track"
+            aria-label={`Assessment progress: ${progress}%`}
+          >
             <div
-              className="h-full rounded-full bg-slate-900 transition-all"
+              className="progress-bar"
               style={{
                 width: `${progress}%`,
               }}
@@ -189,18 +253,20 @@ if (
           </div>
         </div>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="mb-8">
-            <div className="mb-3 text-sm font-medium text-slate-500">
+        {/* QUESTION */}
+        <section className="question-panel">
+
+          <div className="question-header">
+            <div className="question-category">
               {currentQuestion.category}
             </div>
 
-            <h2 className="text-2xl font-semibold tracking-tight">
+            <h2>
               {currentQuestion.text}
             </h2>
 
             {currentQuestion.description && (
-              <p className="mt-3 text-sm leading-6 text-slate-500">
+              <p>
                 {currentQuestion.description}
               </p>
             )}
@@ -211,44 +277,73 @@ if (
             value={currentValue}
             onChange={updateAnswer}
           />
-          {validationError && (
-  <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-    {validationError}
-  </div>
-)}
 
-          <div className="mt-8 flex items-center justify-between">
+          {validationError && (
+            <div className="validation-error">
+              <strong>
+                Check your answer
+              </strong>
+
+              <span>
+                {validationError}
+              </span>
+            </div>
+          )}
+
+          {/* ACTIONS */}
+          <div className="question-actions">
+
             <button
               type="button"
               onClick={handleBack}
               disabled={currentIndex === 0}
-              className="rounded-xl px-4 py-3 text-sm font-medium text-slate-600 disabled:invisible"
+              className="back-button"
             >
-              Back
+              ← Back
             </button>
 
             <button
               type="button"
               disabled={!canContinue}
               onClick={handleNext}
-              className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="continue-button"
             >
               {currentIndex ===
               visibleQuestions.length - 1
                 ? "See my assessment"
-                : "Continue"}
+                : "Continue →"}
             </button>
+
           </div>
         </section>
 
-        <p className="mt-5 text-center text-xs text-slate-400">
-          No bureau pull. No login. No personal
-          data stored.
-        </p>
+        {/* FOOTER */}
+        <footer className="assessment-footer">
+          <span>Private by design</span>
+
+          <span>•</span>
+
+          <span>No bureau pull</span>
+
+          <span>•</span>
+
+          <span>No login</span>
+
+          <span>•</span>
+
+          <span>
+            No personal data stored
+          </span>
+        </footer>
+
       </div>
     </main>
   );
 }
+
+/* =========================================================
+   RESULTS
+   ========================================================= */
 
 function AssessmentResults({
   result,
@@ -269,46 +364,56 @@ function AssessmentResults({
     )}`;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-5 py-8 text-slate-950">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-8">
-          <div className="mb-2 text-sm font-semibold tracking-wide text-slate-500">
+    <main className="results-page">
+      <div className="results-container">
+
+        {/* HEADER */}
+        <header className="results-header">
+          <div className="results-eyebrow">
             BORROWER COPILOT
           </div>
 
-          <h1 className="text-3xl font-semibold">
+          <h1 className="results-title">
             Your borrowing assessment
           </h1>
 
-          <p className="mt-2 text-slate-600">
-            These are estimates, not lender approvals.
+          <p className="results-subtitle">
+            These are estimates, not lender
+            approvals.
           </p>
         </header>
 
-        <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="text-sm font-medium text-slate-500">
-            YOUR DECISION
-          </div>
+        {/* DECISION */}
+        <section className="result-card">
+          <div className="result-card-inner">
 
-          <h2 className="mt-2 text-4xl font-bold tracking-tight">
-            {decisionLabel}
-          </h2>
+            <div className="results-eyebrow">
+              YOUR DECISION
+            </div>
 
-          <div className="mt-4 max-w-2xl space-y-2 text-slate-600">
-            {result.reasons
-              .slice(0, 3)
-              .map((reason, index) => (
-                <p key={index}>
-                  <strong>
-                    {reason.title}:
-                  </strong>{" "}
-                  {reason.explanation}
-                </p>
-              ))}
+            <h2 className="results-decision">
+              {decisionLabel}
+            </h2>
+
+            <div className="decision-reasons">
+              {result.reasons
+                .slice(0, 3)
+                .map((reason, index) => (
+                  <p key={index}>
+                    <strong>
+                      {reason.title}:
+                    </strong>{" "}
+                    {reason.explanation}
+                  </p>
+                ))}
+            </div>
+
           </div>
         </section>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        {/* METRICS */}
+        <div className="metric-grid">
+
           <MetricCard
             label="Lender-style estimate"
             value={`${formatMoney(
@@ -356,95 +461,107 @@ function AssessmentResults({
             )}
             explanation="The amount the assessment recommends based on the requested amount and conservative borrowing capacity."
           />
+
         </div>
 
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-5">
-            <div className="text-sm font-medium text-slate-500">
+        {/* TENURE */}
+        <section className="result-card result-section">
+          <div className="result-card-inner">
+
+            <div className="results-eyebrow">
               TENURE TRADE-OFF
             </div>
 
-            <h2 className="mt-1 text-2xl font-semibold">
+            <h2 className="section-title">
               Same loan, different monthly pressure
             </h2>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-500">
-                  <th className="pb-3">Tenure</th>
-                  <th className="pb-3">
-                    Monthly EMI
-                  </th>
-                  <th className="pb-3">
-                    Total interest
-                  </th>
-                </tr>
-              </thead>
+            <div className="table-wrapper">
+              <table className="results-table">
+                <thead>
+                  <tr>
+                    <th>Tenure</th>
+                    <th>Monthly EMI</th>
+                    <th>Total interest</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {result.tenureOptions.map(
-                  (option) => (
-                    <tr
-                      key={option.months}
-                      className="border-b border-slate-100 last:border-0"
-                    >
-                      <td className="py-4 font-medium">
-                        {option.months} months
-                      </td>
+                <tbody>
+                  {result.tenureOptions.map(
+                    (option) => (
+                      <tr
+                        key={option.months}
+                      >
+                        <td>
+                          {option.months} months
+                        </td>
 
-                      <td className="py-4">
-                        {formatMoney(
-                          option.emi
-                        )}
-                      </td>
+                        <td>
+                          {formatMoney(
+                            option.emi
+                          )}
+                        </td>
 
-                      <td className="py-4">
-                        {formatMoney(
-                          option.totalInterest
-                        )}
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="text-sm font-medium text-slate-500">
-            STRESS TEST
-          </div>
-
-          <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <h2 className="text-2xl font-semibold">
-                {result.stressTest.scenario}
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-slate-600">
-                {result.stressTest.explanation}
-              </p>
+                        <td>
+                          {formatMoney(
+                            option.totalInterest
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold uppercase">
-              {result.stressTest.affordabilityStatus}
-            </span>
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl bg-slate-900 p-6 text-white shadow-sm sm:p-8">
-          <div className="text-sm font-medium text-slate-400">
+        {/* STRESS TEST */}
+        <section className="result-card result-section">
+          <div className="result-card-inner">
+
+            <div className="results-eyebrow">
+              STRESS TEST
+            </div>
+
+            <div className="stress-header">
+
+              <div>
+                <h2 className="section-title">
+                  {result.stressTest.scenario}
+                </h2>
+
+                <p className="section-description">
+                  {result.stressTest.explanation}
+                </p>
+              </div>
+
+              <span className="stress-status">
+                {
+                  result.stressTest
+                    .affordabilityStatus
+                }
+              </span>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* NEGOTIATION CARD */}
+        <section className="negotiation-card">
+
+          <div className="negotiation-eyebrow">
             NEGOTIATION CARD
           </div>
 
-          <h2 className="mt-2 text-3xl font-semibold">
+          <h2>
             What to take to the lender
           </h2>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-3">
+          <div className="negotiation-values">
+
             <CardValue
               label="Fair rate"
               value={`${result.negotiationCard.fairRate.min}% – ${result.negotiationCard.fairRate.max}%`}
@@ -463,46 +580,64 @@ function AssessmentResults({
                 result.negotiationCard.recommendedAmount
               )}
             />
+
           </div>
 
-          <div className="mt-6 space-y-4">
-  <div className="rounded-xl bg-white/10 p-4 text-sm text-slate-300">
-    Ask the lender for the{" "}
-    <strong className="text-white">
-      all-in APR
-    </strong>
-    , including processing fee and
-    other mandatory charges, before
-    accepting the offer.
-  </div>
+          <div className="negotiation-content">
 
-  {result.negotiationCard.lenderQuoteResponse && (
-    <div className="rounded-xl border border-white/20 bg-white p-5 text-slate-900">
-      <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-        What to say
-      </div>
+            <div className="apr-reminder">
+              Ask the lender for the{" "}
+              <strong>
+                all-in APR
+              </strong>
+              , including processing fee
+              and other mandatory charges,
+              before accepting the offer.
+            </div>
 
-      <p className="mt-2 text-sm leading-6">
-        “{result.negotiationCard.lenderQuoteResponse}”
-      </p>
-    </div>
-  )}
-</div>
+            {result.negotiationCard
+              .lenderQuoteResponse && (
+              <div className="what-to-say">
+
+                <div className="what-to-say-label">
+                  WHAT TO SAY
+                </div>
+
+                <p>
+                  “
+                  {
+                    result.negotiationCard
+                      .lenderQuoteResponse
+                  }
+                  ”
+                </p>
+
+              </div>
+            )}
+
+          </div>
+
         </section>
 
-        <div className="mt-8 text-center">
+        {/* RESTART */}
+        <div className="restart-container">
           <button
             type="button"
             onClick={onRestart}
-            className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold hover:bg-slate-100"
+            className="restart-button"
           >
             Start another assessment
           </button>
         </div>
+
       </div>
     </main>
   );
 }
+
+/* =========================================================
+   METRIC CARD
+   ========================================================= */
 
 function MetricCard({
   label,
@@ -514,21 +649,27 @@ function MetricCard({
   explanation: string;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="text-sm font-medium text-slate-500">
+    <section className="metric-card">
+
+      <div className="metric-label">
         {label}
       </div>
 
-      <div className="mt-2 text-2xl font-bold">
+      <div className="metric-value">
         {value}
       </div>
 
-      <p className="mt-3 text-sm leading-6 text-slate-500">
+      <p className="metric-description">
         {explanation}
       </p>
+
     </section>
   );
 }
+
+/* =========================================================
+   NEGOTIATION CARD VALUE
+   ========================================================= */
 
 function CardValue({
   label,
@@ -538,14 +679,16 @@ function CardValue({
   value: string;
 }) {
   return (
-    <div>
-      <div className="text-sm text-slate-400">
+    <div className="negotiation-value">
+
+      <div className="negotiation-value-label">
         {label}
       </div>
 
-      <div className="mt-1 text-xl font-semibold">
+      <div className="negotiation-value-number">
         {value}
       </div>
+
     </div>
   );
 }

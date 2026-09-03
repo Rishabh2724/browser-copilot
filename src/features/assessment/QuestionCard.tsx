@@ -3,9 +3,15 @@ import type { Question } from "./questions";
 interface QuestionCardProps {
   question: Question;
   value: string | number | boolean | undefined;
-  onChange: (
-    value: string | number | boolean
-  ) => void;
+  onChange: (value: string | number | boolean) => void;
+}
+
+function formatIndianNumber(value: string | number) {
+  const numeric = String(value).replace(/\D/g, "");
+
+  if (!numeric) return "";
+
+  return Number(numeric).toLocaleString("en-IN");
 }
 
 export function QuestionCard({
@@ -13,34 +19,37 @@ export function QuestionCard({
   value,
   onChange,
 }: QuestionCardProps) {
-  const inputClass =
-    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-200";
-
-  if (
-    question.type === "select" &&
-    question.options
-  ) {
+  /*
+   * SELECT QUESTIONS
+   */
+  if (question.type === "select" && question.options) {
     return (
-      <div className="space-y-3">
+      <div className="question-options">
         {question.options.map((option) => {
-          const selected =
-            value === option.value;
+          const selected = value === option.value;
 
           return (
             <button
               key={option.value}
               type="button"
-              onClick={() =>
-                onChange(option.value)
-              }
-              className={`w-full rounded-xl border px-4 py-4 text-left transition ${
-                selected
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-200 bg-white hover:border-slate-400"
+              className={`option-card ${
+                selected ? "option-card-selected" : ""
               }`}
+              onClick={() => onChange(option.value)}
+              aria-pressed={selected}
             >
-              <span className="font-medium">
-                {option.label}
+              <span
+                className={`option-radio ${
+                  selected ? "option-radio-selected" : ""
+                }`}
+              >
+                {selected && <span />}
+              </span>
+
+              <span className="option-content">
+                <span className="option-title">
+                  {option.label}
+                </span>
               </span>
             </button>
           );
@@ -49,60 +58,125 @@ export function QuestionCard({
     );
   }
 
+  /*
+   * BOOLEAN QUESTIONS
+   */
   if (question.type === "boolean") {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="boolean-options">
         <button
           type="button"
-          onClick={() => onChange(true)}
-          className={`rounded-xl border px-4 py-4 font-medium transition ${
-            value === true
-              ? "border-slate-900 bg-slate-900 text-white"
-              : "border-slate-200 bg-white hover:border-slate-400"
+          className={`boolean-card ${
+            value === true ? "boolean-card-selected" : ""
           }`}
+          onClick={() => onChange(true)}
+          aria-pressed={value === true}
         >
-          Yes
+          <span className="boolean-icon">✓</span>
+
+          <span>
+            <strong>Yes</strong>
+            <small>This applies to me</small>
+          </span>
         </button>
 
         <button
           type="button"
-          onClick={() => onChange(false)}
-          className={`rounded-xl border px-4 py-4 font-medium transition ${
-            value === false
-              ? "border-slate-900 bg-slate-900 text-white"
-              : "border-slate-200 bg-white hover:border-slate-400"
+          className={`boolean-card ${
+            value === false ? "boolean-card-selected" : ""
           }`}
+          onClick={() => onChange(false)}
+          aria-pressed={value === false}
         >
-          No
+          <span className="boolean-icon">×</span>
+
+          <span>
+            <strong>No</strong>
+            <small>This doesn't apply to me</small>
+          </span>
         </button>
       </div>
     );
   }
 
+  /*
+   * NUMBER / CURRENCY QUESTIONS
+   */
+
+  const isCurrency = question.type === "currency";
+
+  // Number questions should never contain a boolean,
+  // but TypeScript cannot infer that from the union type.
+  const numericValue =
+    typeof value === "number" || typeof value === "string"
+      ? value
+      : "";
+
   return (
-    <input
-      type={question.type === "number" ? "number" : "number"}
-      inputMode="numeric"
-      value={
-        value === undefined
-          ? ""
-          : String(value)
-      }
-      min={question.min}
-      max={question.max}
-      step={question.step}
-      placeholder="Enter amount"
-      className={inputClass}
-      onChange={(event) => {
-        const raw = event.target.value;
+    <div className="number-input-wrapper">
+      <div className="number-input-container">
+        {isCurrency && (
+          <span className="currency-symbol">
+            ₹
+          </span>
+        )}
 
-        if (raw === "") {
-          onChange(0);
-          return;
-        }
+        <input
+          type="number"
+          inputMode="numeric"
+          value={
+            numericValue === "" ||
+            numericValue === 0
+              ? ""
+              : String(numericValue)
+          }
+          min={question.min}
+          max={question.max}
+          step={question.step}
+          placeholder={
+            isCurrency
+              ? "0"
+              : "Enter a number"
+          }
+          className="large-number-input"
+          onChange={(event) => {
+            const raw = event.target.value;
 
-        onChange(Number(raw));
-      }}
-    />
+            if (raw === "") {
+              onChange(0);
+              return;
+            }
+
+            const numeric = Number(raw);
+
+            if (Number.isNaN(numeric)) {
+              return;
+            }
+
+            onChange(numeric);
+          }}
+        />
+      </div>
+
+      {numericValue !== "" &&
+        Number(numericValue) > 0 &&
+        isCurrency && (
+          <div className="number-preview">
+            {formatIndianNumber(numericValue)}
+          </div>
+        )}
+
+      {question.min !== undefined &&
+        question.max !== undefined && (
+          <div className="input-range">
+            Range:{" "}
+            {isCurrency ? "₹" : ""}
+            {question.min.toLocaleString("en-IN")}
+            {" – "}
+            {isCurrency ? "₹" : ""}
+            {question.max.toLocaleString("en-IN")}
+          </div>
+        )}
+    </div>
   );
 }
