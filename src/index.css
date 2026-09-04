@@ -310,6 +310,24 @@ button:disabled {
 }
 
 /* =========================================================
+   INCOME RANGE
+   ========================================================= */
+
+.income-range-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.income-range-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* =========================================================
    MOBILE QUESTIONNAIRE
    ========================================================= */
 
@@ -336,6 +354,10 @@ button:disabled {
     min-height: 68px;
 
     padding: 0 16px;
+  }
+
+  .income-range-inputs {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -3,6 +3,15 @@ import { AFFORDABILITY_RULES } from "../rules/thresholds";
 import { getNormalizedIncome } from "./income";
 
 export interface AffordabilityResult {
+  /** Borrower income after the existing stability haircut. */
+  borrowerIncome: number;
+
+  otherHouseholdIncome: number;
+
+  /** Income used for household affordability, not lender sanction. */
+  householdIncome: number;
+
+  /** Kept for compatibility; this is normalized borrower income. */
   normalizedIncome: number;
 
   householdExpenses: number;
@@ -28,6 +37,14 @@ export function calculateAffordability(
   const normalizedIncome =
     getNormalizedIncome(profile);
 
+  const borrowerIncome = normalizedIncome;
+
+  const otherHouseholdIncome =
+    profile.otherHouseholdIncome?.monthly ?? 0;
+
+  const householdIncome =
+    borrowerIncome + otherHouseholdIncome;
+
   const lenderFoIR =
     AFFORDABILITY_RULES.lenderFoIR[
       profile.employmentType
@@ -50,7 +67,7 @@ export function calculateAffordability(
   const disposableIncome =
     Math.max(
       0,
-      normalizedIncome -
+      householdIncome -
         householdExpenses -
         existingEmi
     );
@@ -65,7 +82,7 @@ export function calculateAffordability(
     );
 
   const safeTotalEmiCapacity =
-    normalizedIncome * safeFoIR;
+    householdIncome * safeFoIR;
 
   const safeFoIRCapacity =
     Math.max(
@@ -85,6 +102,12 @@ export function calculateAffordability(
     );
 
   return {
+    borrowerIncome,
+
+    otherHouseholdIncome,
+
+    householdIncome,
+
     normalizedIncome,
 
     householdExpenses,

@@ -6,6 +6,8 @@ export type QuestionType =
   | "select"
   | "boolean"
   | "range";
+    "income_range";
+
 
 export type QuestionImpact =
   | "decision"

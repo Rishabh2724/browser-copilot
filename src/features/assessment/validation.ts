@@ -8,8 +8,8 @@ export interface ValidationResult {
 
 export function validateAnswer(
   questionId: string,
-  value: string | number | boolean | undefined,
-  answers: Answers
+  value: Answers[string],
+  _answers: Answers
 ): ValidationResult {
   if (
     value === undefined ||
@@ -74,59 +74,71 @@ export function validateAnswer(
       return { valid: true };
     }
 
-        case "monthlyIncome": {
-      const income = Number(value);
+    case "monthlyIncome": {
+  const incomeRange =
+    typeof value === "object" && value !== null
+      ? value
+      : undefined;
 
-      if (
-        !Number.isFinite(income) ||
-        income <= 0
-      ) {
-        return {
-          valid: false,
-          severity: "error",
-          message:
-            "Monthly income must be greater than ₹0.",
-        };
-      }
+  const minIncome = Number(
+    incomeRange?.min ?? 0
+  );
 
-      return {
-        valid: true,
-      };
+  const maxIncome = Number(
+    incomeRange?.max ?? 0
+  );
+
+  if (
+    !Number.isFinite(minIncome) ||
+    minIncome <= 0
+  ) {
+    return {
+      valid: false,
+      severity: "error",
+      message:
+        "Lowest monthly income must be greater than ₹0.",
+    };
+  }
+
+  if (
+    !Number.isFinite(maxIncome) ||
+    maxIncome <= 0
+  ) {
+    return {
+      valid: false,
+      severity: "error",
+      message:
+        "Highest monthly income must be greater than ₹0.",
+    };
+  }
+
+  if (maxIncome < minIncome) {
+    return {
+      valid: false,
+      severity: "error",
+      message:
+        "Highest monthly income cannot be lower than lowest monthly income.",
+    };
+  }
+
+  return {
+    valid: true,
+  };
     }
 
-    case "monthlyIncomeMax": {
-      const maxIncome = Number(value);
-      const minIncome = Number(
-        answers.monthlyIncome ?? 0
-      );
+    case "otherHouseholdIncome": {
+      const income = Number(value);
 
-      if (
-        !Number.isFinite(maxIncome) ||
-        maxIncome <= 0
-      ) {
+      if (!Number.isFinite(income) || income < 0) {
         return {
           valid: false,
           severity: "error",
           message:
-            "Highest monthly income must be greater than ₹0.",
+            "Other household income must be ₹0 or more.",
         };
       }
 
-      if (
-        minIncome > 0 &&
-        maxIncome < minIncome
-      ) {
-        return {
-          valid: false,
-          severity: "error",
-          message:
-            "Highest monthly income cannot be lower than your lowest monthly income.",
-        };
-      }
-
-      return {
-        valid: true,
-      };
+      return { valid: true };
     }
 
     case "loanAmount": {
@@ -149,8 +161,6 @@ export function validateAnswer(
 
     case "householdExpenses": {
       const expenses = Number(value);
-      const income =
-        Number(answers.monthlyIncome ?? 0);
 
       if (
         !Number.isFinite(expenses) ||
@@ -164,25 +174,11 @@ export function validateAnswer(
         };
       }
 
-      if (
-        income > 0 &&
-        expenses > income
-      ) {
-        return {
-          valid: false,
-          severity: "error",
-          message:
-            "Household expenses cannot be higher than the monthly income entered. If your income varies, use your typical monthly income.",
-        };
-      }
-
       return { valid: true };
     }
 
     case "existingEmi": {
       const emi = Number(value);
-      const income =
-        Number(answers.monthlyIncome ?? 0);
 
       if (
         !Number.isFinite(emi) ||
@@ -193,18 +189,6 @@ export function validateAnswer(
           severity: "error",
           message:
             "Existing EMI cannot be negative.",
-        };
-      }
-
-      if (
-        income > 0 &&
-        emi > income
-      ) {
-        return {
-          valid: false,
-          severity: "error",
-          message:
-            "Existing monthly EMIs cannot exceed the monthly income entered.",
         };
       }
 

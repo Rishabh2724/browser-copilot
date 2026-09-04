@@ -1,9 +1,20 @@
 import type { BorrowerProfile } from "../../types/borrower";
 
+export type IncomeRangeAnswer = {
+  min?: number;
+  max?: number;
+};
+
 export type Answers = Record<
   string,
-  string | number | boolean | undefined
+  | string
+  | number
+  | boolean
+  | IncomeRangeAnswer
+  | undefined
 >;
+
+export type AnswerValue = Answers[string];
 
 function deriveIncomeStability(
   min: number,
@@ -56,15 +67,15 @@ function deriveIncomeStability(
 export function buildBorrowerProfile(
   answers: Answers
 ): BorrowerProfile {
-  const rawIncomeMin = Number(
-    answers.monthlyIncome ?? 0
-  );
-
-  const rawIncomeMax = Number(
-    answers.monthlyIncomeMax ??
-      answers.monthlyIncome ??
-      0
-  );
+  const incomeRange = answers.monthlyIncome;
+  const rawIncomeMin =
+    typeof incomeRange === "object" && incomeRange !== null
+      ? Number(incomeRange.min ?? 0)
+      : 0;
+  const rawIncomeMax =
+    typeof incomeRange === "object" && incomeRange !== null
+      ? Number(incomeRange.max ?? incomeRange.min ?? 0)
+      : 0;
 
   /*
    * Normalize the range so min is always
@@ -97,6 +108,10 @@ export function buildBorrowerProfile(
     answers.existingEmi ?? 0
   );
 
+  const otherHouseholdIncomeAmount = Number(
+    answers.otherHouseholdIncome ?? 0
+  );
+
   return {
     age: Number(
       answers.age ?? 0
@@ -109,6 +124,15 @@ export function buildBorrowerProfile(
       max: incomeMax,
       stability: incomeStability,
     },
+
+    otherHouseholdIncome:
+      Number.isFinite(otherHouseholdIncomeAmount) &&
+      otherHouseholdIncomeAmount > 0
+        ? {
+            monthly: otherHouseholdIncomeAmount,
+            stability: "stable",
+          }
+        : undefined,
 
     monthlyHouseholdExpenses: Number(
       answers.householdExpenses ?? 0

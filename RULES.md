@@ -58,9 +58,27 @@ The safe EMI capacity is also constrained to 50% of remaining cash flow.
 
 ```text
 Remaining cash flow
-= normalized income
+= normalized borrower income
+  + other regular household income
   - household expenses
   - existing EMIs
 
 Post-expense EMI constraint
 = remaining cash flow × 50%
+```
+
+### Income range and household income assumptions
+
+The borrower reports a normal low and normal high monthly income. The application derives income stability from that range:
+
+| Variation from midpoint | Derived stability |
+|---|---|
+| ≤ 20% | Stable |
+| ≤ 40% | Variable |
+| > 40% | Highly variable |
+
+For household-affordability calculations, normalized borrower income can be combined with regular household income reported from another household member. Other household income is treated as stable because the borrower reports it as regular.
+
+Lender-style FOIR and sanction estimates use normalized borrower income only. Other household income is not assumed to be lender-eligible unless that person is explicitly modelled as a co-applicant and the lender accepts their income.
+
+These are application assumptions for a conservative borrower-support estimate, not universal lender or regulatory rules.

@@ -10,7 +10,7 @@ export function runIncomeStressTest(
     calculateAffordability(profile);
 
   const stressedIncome =
-    affordability.normalizedIncome *
+    affordability.householdIncome *
     (1 - STRESS_RULES.incomeDrop);
 
   const stressedTotalEmi =
@@ -41,7 +41,7 @@ export function runIncomeStressTest(
   const explanation =
     proposedEmi <= 0
       ? "Not meaningful for new borrowing. There is currently no conservative capacity for an additional EMI, and a 20% income decline would further reduce available cash flow."
-      : `If income falls by 20%, existing EMI plus the proposed EMI would consume approximately ${(stressedFoIR * 100).toFixed(0)}% of normalized income.`;
+      : `If household income falls by 20%, existing EMI plus the proposed EMI would consume approximately ${(stressedFoIR * 100).toFixed(0)}% of household income.`;
 
   return {
     scenario: "Income falls by 20%",

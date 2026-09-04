@@ -155,7 +155,14 @@ const recommendedAmount =
           affordability.safeNewEmiCapacity
         ).toLocaleString(
           "en-IN"
-        )} because it considers income, household expenses and existing EMIs.`,
+        )} because it considers household income, household expenses and existing EMIs.` +
+        (affordability.otherHouseholdIncome > 0
+          ? ` Household affordability includes ₹${Math.round(
+              affordability.otherHouseholdIncome
+            ).toLocaleString(
+              "en-IN"
+            )}/month of regular household income reported from another household member. This is not assumed to be lender-eligible income unless that person is included as a co-applicant and the lender accepts it.`
+          : ""),
     },
 
     // Add product-fit explanation only when useful.

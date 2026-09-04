@@ -10,15 +10,11 @@ import type { Question } from "./questions";
 import {
   buildBorrowerProfile,
   type Answers,
+  type AnswerValue,
 } from "./buildProfile";
+import { getNormalizedIncome } from "../../engine/income";
 
 import { QuestionCard } from "./QuestionCard";
-
-type AnswerValue =
-  | string
-  | number
-  | boolean
-  | undefined;
 
 export function AssessmentFlow() {
   const [answers, setAnswers] =
@@ -229,7 +225,8 @@ export function AssessmentFlow() {
    *
    * If:
    *
-   * income - household expenses - existing EMI <= 0
+   * normalized borrower income + other regular household income
+   * - household expenses - existing EMI <= 0
    *
    * there is no conservative capacity for another EMI.
    *
@@ -239,21 +236,10 @@ export function AssessmentFlow() {
     nextAnswers: Answers
   ): boolean => {
     
-    const incomeMin = Number(
-  nextAnswers.monthlyIncome ?? 0
-);
-
-const incomeMax = Number(
-  nextAnswers.monthlyIncomeMax ??
-    nextAnswers.monthlyIncome ??
-    0
-);
-
-const income =
-  Math.min(
-    incomeMin,
-    incomeMax
-  );
+    const profile = buildBorrowerProfile(nextAnswers);
+    const householdIncome =
+      getNormalizedIncome(profile) +
+      (profile.otherHouseholdIncome?.monthly ?? 0);
 
     const expenses = Number(
       nextAnswers.householdExpenses ?? 0
@@ -266,7 +252,11 @@ const income =
     const hasIncome =
       nextAnswers.monthlyIncome !==
         undefined &&
-      income > 0;
+      householdIncome > 0;
+
+    const hasOtherHouseholdIncome =
+      nextAnswers.otherHouseholdIncome !==
+      undefined;
 
     const hasExpenses =
       nextAnswers.householdExpenses !==
@@ -281,6 +271,7 @@ const income =
      */
     if (
       !hasIncome ||
+      !hasOtherHouseholdIncome ||
       !hasExpenses ||
       !hasExistingEmi
     ) {
@@ -288,7 +279,7 @@ const income =
     }
 
     return (
-      income -
+      householdIncome -
         expenses -
         existingEmi <=
       0
@@ -868,9 +859,9 @@ function AssessmentResults({
             </h2>
 
             <p className="avoid-borrowing-lead">
-              Your existing household costs and
-              debt leave no conservative room
-              for another EMI.
+              {result.emiCeiling <= 0
+                ? "Your existing household costs and debt leave no conservative room for another EMI."
+                : "The requested amount is not comfortably affordable under the conservative repayment and eligibility estimates below."}
             </p>
 
             <div className="avoid-borrowing-grid">

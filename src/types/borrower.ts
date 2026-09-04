@@ -49,6 +49,11 @@ business?: {
     stability: IncomeStability;
   };
 
+  otherHouseholdIncome?: {
+    monthly: number;
+    stability: IncomeStability;
+  };
+
   monthlyHouseholdExpenses: number;
 
   existingLoans: ExistingLoan[];

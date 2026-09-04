@@ -1,4 +1,5 @@
 import type { BorrowerProfile } from "../../types/borrower";
+import type { Answers } from "./buildProfile";
 
 export const LOAN_TYPES_BY_PURPOSE = {
   vehicle: [
@@ -97,6 +98,7 @@ export const LOAN_TYPES_BY_PURPOSE = {
 
 export type QuestionType =
   | "currency"
+  | "income_range"
   | "number"
   | "select"
   | "boolean";
@@ -109,16 +111,13 @@ export interface QuestionOption {
 export interface Question {
   id: string;
   category: string;
-  text: string | ((answers: Record<string, string | number | boolean | undefined>) => string);
+  text: string | ((answers: Answers) => string);
   description?: string;
   type: QuestionType;
   required: boolean;
   options?: QuestionOption[];
   getOptions?: (
-  answers: Record<
-    string,
-    string | number | boolean | undefined
-  >
+  answers: Answers
 ) => QuestionOption[];
   min?: number;
   max?: number;
@@ -378,13 +377,13 @@ export const QUESTIONS: Question[] = [
   // 6. INCOME
   // =====================================================
 
-    {
+  {
     id: "monthlyIncome",
     category: "Income",
     text: "What is your monthly income range?",
     description:
       "Enter the lowest and highest amount you typically earn in a month. We use the range to estimate how predictable your income is.",
-    type: "currency",
+    type: "income_range",
     required: true,
     min: 0,
     max: 10000000,
@@ -398,32 +397,23 @@ export const QUESTIONS: Question[] = [
       "confidence",
     ],
   },
+  // =====================================================
+  // 7. OTHER HOUSEHOLD INCOME
+  // =====================================================
 
   {
-    id: "monthlyIncomeMax",
-    category: "Income",
-    text: "What is the highest you typically earn in a month?",
+    id: "otherHouseholdIncome",
+    category: "Household income",
+    text: "Does anyone else in your household have regular income?",
     description:
-      "Use a normal high month, not an exceptional one-off month.",
+      "Include income from a spouse or other household member that regularly contributes to household finances. Only include income you reasonably expect to remain available.",
     type: "currency",
     required: true,
     min: 0,
     max: 10000000,
     step: 1000,
-    affects: [
-      "decision",
-      "sanction",
-      "safeAmount",
-      "rate",
-      "emi",
-      "confidence",
-    ],
+    affects: ["decision", "safeAmount", "emi", "confidence"],
   },
-
-  // =====================================================
-  // 7. INCOME STABILITY
-  // =====================================================
-
 
   // =====================================================
   // 8. HOUSEHOLD EXPENSES

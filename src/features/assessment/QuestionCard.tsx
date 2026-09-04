@@ -1,22 +1,18 @@
 import type { Question } from "./questions";
+import type {
+  AnswerValue,
+  IncomeRangeAnswer,
+} from "./buildProfile";
 
 interface QuestionCardProps {
   question: Question;
-
-  value:
-    | string
-    | number
-    | boolean
-    | undefined;
-
+  value: AnswerValue;
   options?: {
     label: string;
     value: string;
   }[];
 
-  onChange: (
-    value: string | number | boolean
-  ) => void;
+  onChange: (value: Exclude<AnswerValue, undefined>) => void;
 }
 
 function formatIndianNumber(
@@ -47,6 +43,166 @@ export function QuestionCard({
     options ??
     question.options ??
     [];
+
+
+  /*
+   * ---------------------------------------------------------
+   * INCOME RANGE
+   * ---------------------------------------------------------
+   *
+   * The borrower enters both the lowest and highest
+   * typical monthly income on the same screen.
+   *
+   * The two values are stored as:
+   *
+   * monthlyIncome: { min, max }
+   *
+   * The engine later derives income stability from
+   * the range.
+   */
+  if (question.type === "income_range") {
+    const minIncome =
+      typeof value === "object" &&
+      value !== null
+        ? value.min ?? ""
+        : "";
+
+    const maxIncome =
+      typeof value === "object" &&
+      value !== null
+        ? value.max ?? ""
+        : "";
+
+    const handleIncomeChange = (
+      field: "min" | "max",
+      rawValue: string
+    ) => {
+      const parsedValue =
+        rawValue === ""
+          ? undefined
+          : Number(rawValue);
+
+      const currentMin =
+        typeof minIncome === "number"
+          ? minIncome
+          : undefined;
+
+      const currentMax =
+        typeof maxIncome === "number"
+          ? maxIncome
+          : undefined;
+
+      const nextRange: IncomeRangeAnswer = {
+        min:
+          field === "min"
+            ? parsedValue
+            : currentMin,
+
+        max:
+          field === "max"
+            ? parsedValue
+            : currentMax,
+      };
+
+      onChange(nextRange);
+    };
+
+    return (
+      <div className="question-card-content">
+        <div className="income-range-inputs">
+          <div className="income-range-field">
+            <label>
+              Lowest monthly income
+            </label>
+
+            <div className="number-input-wrapper">
+              <span className="currency-symbol">
+                ₹
+              </span>
+
+              <input
+                className="large-number-input"
+                type="number"
+                inputMode="numeric"
+                min={question.min}
+                max={question.max}
+                step={question.step ?? 1}
+                value={
+                  minIncome === ""
+                    ? ""
+                    : String(minIncome)
+                }
+                placeholder="40,000"
+                onChange={(event) =>
+                  handleIncomeChange(
+                    "min",
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+            {minIncome !== "" && (
+              <p className="formatted-number">
+                ₹
+                {formatIndianNumber(
+                  minIncome
+                )}
+              </p>
+            )}
+          </div>
+
+          <div className="income-range-field">
+            <label>
+              Highest monthly income
+            </label>
+
+            <div className="number-input-wrapper">
+              <span className="currency-symbol">
+                ₹
+              </span>
+
+              <input
+                className="large-number-input"
+                type="number"
+                inputMode="numeric"
+                min={question.min}
+                max={question.max}
+                step={question.step ?? 1}
+                value={
+                  maxIncome === ""
+                    ? ""
+                    : String(maxIncome)
+                }
+                placeholder="80,000"
+                onChange={(event) =>
+                  handleIncomeChange(
+                    "max",
+                    event.target.value
+                  )
+                }
+              />
+            </div>
+
+            {maxIncome !== "" && (
+              <p className="formatted-number">
+                ₹
+                {formatIndianNumber(
+                  maxIncome
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <p className="input-hint">
+          Enter a normal low month and a
+          normal high month. Don't use an
+          exceptional one-off month.
+        </p>
+      </div>
+    );
+  }
 
   /*
    * ---------------------------------------------------------

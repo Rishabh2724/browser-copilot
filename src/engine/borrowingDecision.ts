@@ -66,7 +66,7 @@ if (securedLoanWithoutSecurity) {
    * Remaining          ₹0
    */
   const remainingCashFlow =
-    affordability.normalizedIncome -
+    affordability.householdIncome -
     profile.monthlyHouseholdExpenses -
     affordability.existingEmi;
 
