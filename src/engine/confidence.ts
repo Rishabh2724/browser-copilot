@@ -76,7 +76,10 @@ export function calculateConfidence(
     .filter((check) => check.complete)
     .reduce((sum, check) => sum + check.weight, 0);
 
-  const score = completedWeight / totalWeight;
+const rawScore =
+  completedWeight / totalWeight;
+
+const score = Math.min(rawScore, 0.9);
 
   let level: "low" | "medium" | "high";
 
