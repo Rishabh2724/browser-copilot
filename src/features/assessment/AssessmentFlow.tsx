@@ -184,6 +184,13 @@ export function AssessmentFlow() {
     | undefined =
     visibleQuestions[safeCurrentIndex];
 
+  const currentQuestionText =
+    currentQuestion
+      ? typeof currentQuestion.text === "function"
+        ? currentQuestion.text(answers)
+        : currentQuestion.text
+      : "";
+
   const currentValue =
     currentQuestion
       ? answers[currentQuestion.id]
@@ -643,9 +650,7 @@ if (
             </div>
 
         <h2>
-        {typeof currentQuestion.text === "function"
-            ? currentQuestion.text(answers)
-            : currentQuestion.text}
+        {currentQuestionText}
         </h2>
             {currentQuestion.description && (
               <p>

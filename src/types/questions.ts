@@ -22,18 +22,15 @@ export interface QuestionOption {
 
 export interface Question {
   id: string;
-
   category: string;
-
   text:
-  | string
-  | ((
-      answers: Record<
-        string,
-        string | number | boolean | undefined
-      >
-    ) => string);
-
+    | string
+    | ((
+        answers: Record<
+          string,
+          string | number | boolean | undefined
+        >
+      ) => string);
   description?: string;
 
   type: QuestionType;

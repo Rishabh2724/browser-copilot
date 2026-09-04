@@ -219,7 +219,11 @@ export function QuestionCard({
               ? "0"
               : "Enter a value"
           }
-          aria-label={question.text}
+          aria-label={
+            typeof question.text === "function"
+              ? "Answer"
+              : question.text
+          }
           onChange={(event) => {
             const rawValue =
               event.target.value;
