@@ -6,18 +6,21 @@ export function runIncomeStressTest(
   profile: BorrowerProfile,
   proposedEmi: number
 ) {
-  const affordability = calculateAffordability(profile);
+  const affordability =
+    calculateAffordability(profile);
 
   const stressedIncome =
     affordability.normalizedIncome *
     (1 - STRESS_RULES.incomeDrop);
 
   const stressedTotalEmi =
-    affordability.existingEmi + proposedEmi;
+    affordability.existingEmi +
+    Math.max(0, proposedEmi);
 
   const stressedFoIR =
     stressedIncome > 0
-      ? stressedTotalEmi / stressedIncome
+      ? stressedTotalEmi /
+        stressedIncome
       : 1;
 
   let status:
@@ -25,7 +28,9 @@ export function runIncomeStressTest(
     | "tight"
     | "unsafe";
 
-  if (stressedFoIR <= 0.30) {
+  if (proposedEmi <= 0) {
+    status = "unsafe";
+  } else if (stressedFoIR <= 0.30) {
     status = "safe";
   } else if (stressedFoIR <= 0.40) {
     status = "tight";
@@ -33,16 +38,26 @@ export function runIncomeStressTest(
     status = "unsafe";
   }
 
+  const explanation =
+    proposedEmi <= 0
+      ? "Not meaningful for new borrowing. There is currently no conservative capacity for an additional EMI, and a 20% income decline would further reduce available cash flow."
+      : `If income falls by 20%, existing EMI plus the proposed EMI would consume approximately ${(stressedFoIR * 100).toFixed(0)}% of normalized income.`;
+
   return {
     scenario: "Income falls by 20%",
-    baselineEmi: proposedEmi,
-    stressedEmi: proposedEmi,
-    stressedIncome: Math.round(stressedIncome),
+    baselineEmi: Math.round(
+      Math.max(0, proposedEmi)
+    ),
+    stressedEmi: Math.round(
+      Math.max(0, proposedEmi)
+    ),
+    stressedIncome: Math.round(
+      stressedIncome
+    ),
     stressedFoIR: Number(
       stressedFoIR.toFixed(2)
     ),
     affordabilityStatus: status,
-    explanation:
-      `If income falls by 20%, existing EMI plus the proposed EMI would consume approximately ${(stressedFoIR * 100).toFixed(0)}% of normalized income.`,
+    explanation,
   };
 }

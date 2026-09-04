@@ -32,6 +32,25 @@ export function determineBorrowDecision(
 
   const reasons: string[] = [];
 
+  const securedLoanWithoutSecurity =
+  (
+    profile.loan.type === "lap" ||
+    profile.loan.type === "gold"
+  ) &&
+  profile.collateral?.available !== true;
+
+if (securedLoanWithoutSecurity) {
+  return {
+    decision: "dont_borrow",
+    reasons: [
+      profile.loan.type === "lap"
+        ? "Loan Against Property requires eligible property that can potentially be offered as security."
+        : "A gold loan requires eligible gold that can potentially be pledged as security.",
+      "Because suitable security was not confirmed, this selected secured product is not currently a viable borrowing route.",
+    ],
+  };
+}
+
   /*
    * HARD STOP #1
    *

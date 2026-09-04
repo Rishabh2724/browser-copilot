@@ -3,6 +3,14 @@ export interface Range {
   max: number;
 }
 
+export interface SafeAmount {
+  min: number;
+  max: number;
+  affordabilityMax: number;
+  collateralMax?: number;
+  explanation: string;
+}
+
 export type BorrowDecision =
   | "borrow"
   | "borrow_less"
@@ -28,10 +36,15 @@ export interface StressTestResult {
   scenario: string;
   baselineEmi: number;
   stressedEmi: number;
+
+  stressedIncome?: number;
+  stressedFoIR?: number;
+
   affordabilityStatus:
     | "safe"
     | "tight"
     | "unsafe";
+
   explanation: string;
 }
 
@@ -51,7 +64,7 @@ export interface AssessmentResult {
 
   lenderAmount: Range;
 
-  safeAmount: Range;
+  safeAmount: SafeAmount;
 
   requestedAmount: number;
 

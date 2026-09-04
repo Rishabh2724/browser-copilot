@@ -25,8 +25,18 @@ export function calculateLenderAmount(
       )
   );
 
+  const min = Math.max(
+    0,
+    Math.min(...amounts)
+  );
+
+  const max = Math.max(
+    0,
+    Math.max(...amounts)
+  );
+
   return {
-    min: Math.min(...amounts),
-    max: Math.max(...amounts),
+    min: Math.round(min),
+    max: Math.round(max),
   };
 }

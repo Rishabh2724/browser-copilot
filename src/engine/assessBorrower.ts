@@ -64,13 +64,11 @@ export function assessBorrower(
   const recommendedAmount =
   decision.decision === "dont_borrow"
     ? 0
-    : decision.decision === "borrow"
-      ? profile.loan.amountWanted
-      : Math.min(
-          profile.loan.amountWanted,
-          safeAmount.max
-        );
-
+    : Math.min(
+        profile.loan.amountWanted,
+        safeAmount.max
+      );
+      
   const recommendedTenureOptions =
     calculateTenureOptions(
       profile,
