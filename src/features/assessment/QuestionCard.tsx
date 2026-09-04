@@ -34,9 +34,7 @@ function formatIndianNumber(
     return String(value);
   }
 
-  return numericValue.toLocaleString(
-    "en-IN"
-  );
+  return numericValue.toLocaleString("en-IN");
 }
 
 export function QuestionCard({
@@ -54,11 +52,8 @@ export function QuestionCard({
    * ---------------------------------------------------------
    * SELECT
    * ---------------------------------------------------------
-   *
-   * A select question MUST remain a select question.
-   * Never fall through to the number input if options
-   * are missing.
    */
+
   if (question.type === "select") {
     if (selectOptions.length === 0) {
       return (
@@ -69,10 +64,10 @@ export function QuestionCard({
             </strong>
 
             <span>
-              We could not find a suitable loan
-              product for the purpose selected.
-              Please go back and choose another
-              purpose.
+              We could not find a suitable
+              loan product for the purpose
+              selected. Please go back and
+              choose another purpose.
             </span>
           </div>
         </div>
@@ -82,39 +77,36 @@ export function QuestionCard({
     return (
       <div className="question-card-content">
         <div className="question-options">
-          {selectOptions.map(
-            (option) => {
-              const selected =
-                value === option.value;
+          {selectOptions.map((option) => {
+            const selected =
+              value === option.value;
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`question-option ${
-                    selected
-                      ? "selected"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    onChange(
-                      option.value
-                    )
-                  }
-                >
-                  <span className="question-option-label">
-                    {option.label}
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={`question-option ${
+                  selected
+                    ? "selected"
+                    : ""
+                }`}
+                aria-pressed={selected}
+                onClick={() =>
+                  onChange(option.value)
+                }
+              >
+                <span className="question-option-label">
+                  {option.label}
+                </span>
+
+                {selected && (
+                  <span className="question-option-check">
+                    ✓
                   </span>
-
-                  {selected && (
-                    <span className="question-option-check">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              );
-            }
-          )}
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -130,6 +122,7 @@ export function QuestionCard({
     return (
       <div className="question-card-content">
         <div className="boolean-options">
+
           <button
             type="button"
             className={`boolean-option ${
@@ -137,6 +130,9 @@ export function QuestionCard({
                 ? "selected"
                 : ""
             }`}
+            aria-pressed={
+              value === true
+            }
             onClick={() =>
               onChange(true)
             }
@@ -157,6 +153,9 @@ export function QuestionCard({
                 ? "selected"
                 : ""
             }`}
+            aria-pressed={
+              value === false
+            }
             onClick={() =>
               onChange(false)
             }
@@ -169,6 +168,7 @@ export function QuestionCard({
               No, this does not apply to me
             </span>
           </button>
+
         </div>
       </div>
     );
@@ -189,7 +189,9 @@ export function QuestionCard({
   return (
     <div className="question-card-content">
       <div className="number-input-wrapper">
-        {question.type === "currency" && (
+
+        {question.type ===
+          "currency" && (
           <span className="currency-symbol">
             ₹
           </span>
@@ -201,17 +203,23 @@ export function QuestionCard({
           inputMode="numeric"
           min={question.min}
           max={question.max}
-          step={question.step ?? 1}
+          step={
+            question.step ?? 1
+          }
           value={
             numericValue === ""
               ? ""
-              : String(numericValue)
+              : String(
+                  numericValue
+                )
           }
           placeholder={
-            question.type === "currency"
+            question.type ===
+            "currency"
               ? "0"
               : "Enter a value"
           }
+          aria-label={question.text}
           onChange={(event) => {
             const rawValue =
               event.target.value;
@@ -250,17 +258,24 @@ export function QuestionCard({
         </p>
       )}
 
-      {question.min !== undefined ||
-      question.max !== undefined ? (
+      {(
+        question.min !==
+          undefined ||
+        question.max !==
+          undefined
+      ) ? (
         <p className="input-hint">
-          {question.min !== undefined &&
-          question.max !== undefined
+          {question.min !==
+            undefined &&
+          question.max !==
+            undefined
             ? `Enter a value between ${formatIndianNumber(
                 question.min
               )} and ${formatIndianNumber(
                 question.max
               )}.`
-            : question.min !== undefined
+            : question.min !==
+                undefined
               ? `Minimum: ${formatIndianNumber(
                   question.min
                 )}`

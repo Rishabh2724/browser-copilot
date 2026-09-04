@@ -236,6 +236,84 @@ export const QUESTIONS: Question[] = [
   ],
 },
 
+
+  // =====================================================
+  // COLLATERAL
+  // =====================================================
+
+ // =====================================================
+// 4. SECURED LOAN SECURITY
+// =====================================================
+
+{
+  id: "collateralAvailable",
+  category: "Security",
+  text: (answers) => {
+    if (answers.loanType === "lap") {
+      return "Do you own property you could potentially offer as security?";
+    }
+
+    if (answers.loanType === "gold") {
+      return "Do you have gold you could potentially pledge as security?";
+    }
+
+    return "Do you have the security needed for this loan?";
+  },
+  description:
+    "This helps us determine whether the selected secured product is worth assessing further. It does not guarantee eligibility.",
+  type: "boolean",
+  required: true,
+  affects: [
+    "decision",
+    "sanction",
+    "safeAmount",
+    "rate",
+    "confidence",
+  ],
+
+  showWhen: (profile) =>
+    profile.loan?.type === "lap" ||
+    profile.loan?.type === "gold",
+},
+  {
+  id: "collateralValue",
+  category: "Security",
+
+  text: (answers) => {
+    if (answers.loanType === "lap") {
+      return "What is the approximate market value of that property?";
+    }
+
+    if (answers.loanType === "gold") {
+      return "What is the approximate current value of the gold you could pledge?";
+    }
+
+    return "What is the approximate value of the security?";
+  },
+
+  description:
+    "Use your best estimate. The actual lender valuation may differ.",
+
+  type: "currency",
+  required: true,
+
+  min: 10000,
+  max: 100000000,
+  step: 10000,
+
+  affects: [
+    "sanction",
+    "safeAmount",
+    "rate",
+    "confidence",
+  ],
+
+  showWhen: (profile) =>
+    (profile.loan?.type === "lap" ||
+      profile.loan?.type === "gold") &&
+    profile.collateral?.available === true,
+},
+
   // =====================================================
   // 4. AMOUNT
   // =====================================================
@@ -539,30 +617,6 @@ export const QUESTIONS: Question[] = [
     showWhen: (profile) =>
       profile.employmentType ===
       "self_employed",
-  },
-
-  // =====================================================
-  // COLLATERAL
-  // =====================================================
-
-  {
-    id: "collateralAvailable",
-    category: "Security",
-    text: "Do you have an asset you could potentially offer as security?",
-    description:
-      "Examples include property or gold. This does not mean you are eligible for a secured loan.",
-    type: "boolean",
-    required: false,
-    affects: [
-      "sanction",
-      "rate",
-      "confidence",
-    ],
-
-    showWhen: (profile) =>
-      profile.employmentType ===
-        "self_employed" ||
-      profile.loan?.type === "lap",
   },
 
   // =====================================================

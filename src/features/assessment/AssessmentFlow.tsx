@@ -38,11 +38,132 @@ export function AssessmentFlow() {
    *
    * This is important because some questions are conditional.
    */
-  const visibleQuestions = useMemo(
-    () => getVisibleQuestions(answers),
-    [answers]
-  );
+  const visibleQuestions = useMemo(() => {
+  const questions =
+    getVisibleQuestions(answers);
 
+  /*
+   * Security questions are product-dependent.
+   *
+   * Remove the old collateral question from
+   * its generic position because it will be
+   * inserted immediately after loanType.
+   */
+  const withoutOldCollateral =
+    questions.filter(
+      (question) =>
+        question.id !==
+        "collateralAvailable"
+    );
+
+  const loanTypeIndex =
+    withoutOldCollateral.findIndex(
+      (question) =>
+        question.id === "loanType"
+    );
+
+  if (loanTypeIndex === -1) {
+    return withoutOldCollateral;
+  }
+
+  const loanType =
+    String(
+      answers.loanType ?? ""
+    );
+
+  /*
+   * Only secured products need this
+   * additional branch.
+   */
+  if (
+    loanType !== "lap" &&
+    loanType !== "gold"
+  ) {
+    return withoutOldCollateral;
+  }
+
+  const securityQuestion: Question = {
+    id: "collateralAvailable",
+
+    category: "Security",
+
+    text:
+      loanType === "lap"
+        ? "Do you own property you could potentially offer as security?"
+        : "Do you have gold you could potentially pledge as security?",
+
+    description:
+      loanType === "lap"
+        ? "Loan Against Property requires eligible property that can potentially be offered as collateral. This does not guarantee eligibility."
+        : "A gold loan requires eligible gold that can potentially be pledged. This does not guarantee eligibility.",
+
+    type: "boolean",
+
+    required: true,
+
+    affects: [
+      "decision",
+      "sanction",
+      "safeAmount",
+      "rate",
+      "confidence",
+    ],
+  };
+
+  const collateralValueQuestion:
+    Question = {
+      id: "collateralValue",
+
+      category: "Security",
+
+      text:
+        loanType === "lap"
+          ? "What is the approximate market value of that property?"
+          : "What is the approximate current value of the gold you could pledge?",
+
+      description:
+        "Use your best estimate. Actual lender valuation and eligible loan-to-value limits may differ.",
+
+      type: "currency",
+
+      required: true,
+
+      min: 10000,
+
+      max: 100000000,
+
+      step: 10000,
+
+      affects: [
+        "sanction",
+        "safeAmount",
+        "rate",
+        "confidence",
+      ],
+
+      showWhen: (profile) =>
+        profile.collateral
+          ?.available === true,
+    };
+
+  return [
+    ...withoutOldCollateral.slice(
+      0,
+      loanTypeIndex + 1
+    ),
+
+    securityQuestion,
+
+    ...(answers.collateralAvailable ===
+    true
+      ? [collateralValueQuestion]
+      : []),
+
+    ...withoutOldCollateral.slice(
+      loanTypeIndex + 1
+    ),
+  ];
+}, [answers]);
   /*
    * Keep the current index inside the currently visible
    * question list.
@@ -92,10 +213,7 @@ export function AssessmentFlow() {
    * This is useful for conditional questions, but we must
    * NOT use this stale profile for the final submission.
    */
-  const profile = useMemo(
-    () => buildBorrowerProfile(answers),
-    [answers]
-  );
+
 
   /*
    * ---------------------------------------------------------
@@ -307,6 +425,25 @@ export function AssessmentFlow() {
     };
 
     /*
+ * -------------------------------------------------------
+ * SECURED PRODUCT COMPATIBILITY
+ * -------------------------------------------------------
+ */
+
+if (
+  currentQuestion.id ===
+    "collateralAvailable" &&
+  currentValue === false
+) {
+  setAnswers(nextAnswers);
+
+  setValidationError(
+    "This secured loan is not currently a fit because the required security is unavailable."
+  );
+
+  return;
+}
+    /*
      * -------------------------------------------------------
      * HARD STOP
      * -------------------------------------------------------
@@ -505,10 +642,11 @@ export function AssessmentFlow() {
               {currentQuestion.category}
             </div>
 
-            <h2>
-              {currentQuestion.text}
-            </h2>
-
+        <h2>
+        {typeof currentQuestion.text === "function"
+            ? currentQuestion.text(answers)
+            : currentQuestion.text}
+        </h2>
             {currentQuestion.description && (
               <p>
                 {currentQuestion.description}
@@ -621,22 +759,31 @@ function AssessmentResults({
   result: AssessmentResult;
   onRestart: () => void;
 }) {
+  const formatMoney = (value: number) =>
+    `₹${Math.round(value).toLocaleString(
+      "en-IN"
+    )}`;
+
   const decisionLabel = {
     borrow: "BORROW",
     borrow_less: "BORROW LESS",
     dont_borrow: "DON'T BORROW",
   }[result.decision];
 
-  const formatMoney = (value: number) =>
-    `₹${Math.round(value).toLocaleString(
-      "en-IN"
-    )}`;
+  const isDontBorrow =
+    result.decision === "dont_borrow";
+
+  const isBorrowLess =
+    result.decision === "borrow_less";
 
   return (
     <main className="results-page">
       <div className="results-container">
 
-        {/* HEADER */}
+        {/* =================================================
+            HEADER
+           ================================================= */}
+
         <header className="results-header">
           <div className="results-eyebrow">
             BORROWER COPILOT
@@ -647,13 +794,19 @@ function AssessmentResults({
           </h1>
 
           <p className="results-subtitle">
-            These are estimates, not lender
-            approvals.
+            A conservative estimate based on
+            the information you provided.
+            This is not a lender approval.
           </p>
         </header>
 
-        {/* DECISION */}
-        <section className="result-card">
+        {/* =================================================
+            DECISION
+           ================================================= */}
+
+        <section
+          className={`result-card result-card-${result.decision}`}
+        >
           <div className="result-card-inner">
 
             <div className="results-eyebrow">
@@ -680,315 +833,515 @@ function AssessmentResults({
           </div>
         </section>
 
-        {/* METRICS */}
-        <div className="metric-grid">
+        {/* =================================================
+            DON'T BORROW
+           ================================================= */}
 
-          <MetricCard
-            label="Lender-style estimate"
-            value={`${formatMoney(
-              result.lenderAmount.min
-            )} – ${formatMoney(
-              result.lenderAmount.max
-            )}`}
-            explanation="A lender-style affordability estimate. It is not a sanction or approval."
-          />
+        {isDontBorrow ? (
+          <section className="avoid-borrowing-card">
 
-          <MetricCard
-            label="Borrower-safe amount"
-            value={`${formatMoney(
-              result.safeAmount.min
-            )} – ${formatMoney(
-              result.safeAmount.max
-            )}`}
-            explanation="A more conservative range designed to leave repayment room after household costs and existing debt."
-          />
-
-          <MetricCard
-            label="Fair interest rate"
-            value={`${result.fairRate.min}% – ${result.fairRate.max}%`}
-            explanation="Estimated fair rate band based on product type and available borrower risk information."
-          />
-
-          <MetricCard
-            label="Estimated all-in APR"
-            value={`${result.apr.min}% – ${result.apr.max}%`}
-            explanation="Includes the assumed processing-fee impact. Compare this with the lender's disclosed APR."
-          />
-
-          <MetricCard
-            label="Safe new EMI"
-            value={formatMoney(
-              result.emiCeiling
-            )}
-            explanation="The conservative monthly ceiling for the new loan after accounting for income and existing obligations."
-          />
-
-          <MetricCard
-            label="Recommended amount"
-            value={formatMoney(
-              result.recommendedAmount
-            )}
-            explanation="The amount the assessment recommends based on the requested amount and conservative borrowing capacity."
-          />
-
-        </div>
-
-        {/* TENURE */}
-        <section className="result-card result-section">
-          <div className="result-card-inner">
-
-            <div className="results-eyebrow">
-              TENURE TRADE-OFF
+            <div className="avoid-borrowing-eyebrow">
+              WHY WE ARE STOPPING HERE
             </div>
 
-            <h2 className="section-title">
-              Same loan, different monthly pressure
+            <h2>
+              Taking another loan is not
+              comfortably affordable right now.
             </h2>
 
-            <div className="table-wrapper">
-              <table className="results-table">
-                <thead>
-                  <tr>
-                    <th>Tenure</th>
-                    <th>Monthly EMI</th>
-                    <th>Total interest</th>
-                  </tr>
-                </thead>
+            <p className="avoid-borrowing-lead">
+              Your existing household costs and
+              debt leave no conservative room
+              for another EMI.
+            </p>
 
-                <tbody>
-                  {result.tenureOptions.map(
-                    (option) => (
-                      <tr
-                        key={option.months}
-                      >
-                        <td>
-                          {option.months} months
-                        </td>
+            <div className="avoid-borrowing-grid">
 
-                        <td>
-                          {formatMoney(
-                            option.emi
-                          )}
-                        </td>
+              <div className="avoid-borrowing-metric">
+                <span>
+                  Safe new EMI
+                </span>
 
-                        <td>
-                          {formatMoney(
-                            option.totalInterest
-                          )}
-                        </td>
-                      </tr>
-                    )
+                <strong>
+                  {formatMoney(
+                    result.emiCeiling
                   )}
-                </tbody>
-              </table>
-            </div>
+                </strong>
 
-          </div>
-        </section>
-
-        {/* STRESS TEST */}
-        <section className="result-card result-section">
-          <div className="result-card-inner">
-
-            <div className="results-eyebrow">
-              STRESS TEST
-            </div>
-
-            <div className="stress-header">
-
-              <div>
-                <h2 className="section-title">
-                  {result.stressTest.scenario}
-                </h2>
-
-                <p className="section-description">
-                  {result.stressTest.explanation}
+                <p>
+                  This is the maximum new EMI
+                  we consider conservative based
+                  on your current cash flow.
                 </p>
               </div>
 
-              <span className="stress-status">
-                {
-                  result.stressTest
-                    .affordabilityStatus
-                }
-              </span>
+              <div className="avoid-borrowing-metric">
+                <span>
+                  Borrower-safe amount
+                </span>
+
+                <strong>
+                  {formatMoney(
+                    result.safeAmount.max
+                  )}
+                </strong>
+
+                <p>
+                  This is the upper end of the
+                  amount we consider affordable
+                  under the current assumptions.
+                </p>
+              </div>
 
             </div>
 
-          </div>
-        </section>
+            <div className="avoid-borrowing-note">
+              <strong>
+                What could change this?
+              </strong>
 
-        {/* BORROWING GUIDANCE */}
-{result.decision === "dont_borrow" ? (
-  <section className="avoid-borrowing-card">
+              <p>
+                Reducing existing debt or
+                household expenses, increasing
+                stable income, or waiting until
+                your cash flow improves could
+                change the assessment.
+              </p>
+            </div>
 
-    <div className="avoid-borrowing-eyebrow">
-      BORROWING GUIDANCE
-    </div>
+          </section>
+        ) : (
+          <>
+            {/* =============================================
+                BORROW / BORROW LESS METRICS
+               ============================================= */}
 
-    <h2>
-      Don't borrow right now
-    </h2>
+            <div className="metric-grid">
 
-    <p className="avoid-borrowing-description">
-      Your current income is already fully
-      committed to household expenses and
-      existing obligations. Taking another
-      EMI would leave no conservative
-      repayment room.
-    </p>
+              <MetricCard
+                label="Amount you asked for"
+                value={formatMoney(
+                  result.recommendedAmount ===
+                    0
+                    ? result.safeAmount.max
+                    : result.recommendedAmount
+                )}
+                explanation={
+                  isBorrowLess
+                    ? "This is compared against the conservative amount we believe your current cash flow can support."
+                    : "This is the amount used for the borrowing recommendation."
+                }
+              />
 
-    <div className="avoid-borrowing-metrics">
+              <MetricCard
+                label="Borrower-safe range"
+                value={`${formatMoney(
+                  result.safeAmount.min
+                )} – ${formatMoney(
+                  result.safeAmount.max
+                )}`}
+                explanation="This range is intentionally more conservative than a lender-style estimate and leaves room for household costs and existing debt."
+              />
 
-      <div>
-        <span>
-          Remaining cash flow
-        </span>
+              <MetricCard
+                label="Safe new EMI"
+                value={formatMoney(
+                  result.emiCeiling
+                )}
+                explanation="This is the conservative ceiling for a new EMI after considering income, household expenses and existing EMIs."
+              />
 
-        <strong>
-          ₹0
-        </strong>
-      </div>
+              <MetricCard
+                label="Fair interest rate"
+                value={`${result.fairRate.min}% – ${result.fairRate.max}%`}
+                explanation="This is an indicative rate band based on the product type and borrower risk information available."
+              />
 
-      <div>
-        <span>
-          Safe new EMI
-        </span>
+              <MetricCard
+                label="Estimated all-in APR"
+                value={`${result.apr.min}% – ${result.apr.max}%`}
+                explanation="APR is shown as an all-in comparison measure and should be checked against the lender's disclosed fees and charges."
+              />
 
-        <strong>
-          {formatMoney(
-            result.emiCeiling
-          )}
-        </strong>
-      </div>
+              <MetricCard
+                label="Confidence"
+                value={`${result.confidence.level.toUpperCase()} · ${Math.round(
+                  result.confidence.score * 100
+                )}%`}
+                explanation={
+                  result.confidence.reasons[0] ??
+                  "Confidence reflects how complete and reliable the information provided was."
+                }
+              />
 
-      <div>
-        <span>
-          Recommended borrowing
-        </span>
+            </div>
 
-        <strong>
-          {formatMoney(
-            result.recommendedAmount
-          )}
-        </strong>
-      </div>
+            {/* =============================================
+                BORROW LESS EXPLANATION
+               ============================================= */}
 
-    </div>
+            {isBorrowLess && (
+              <section className="borrow-less-card">
 
-    <div className="avoid-borrowing-actions">
+                <div className="results-eyebrow">
+                  WHY BORROW LESS?
+                </div>
 
-      <div className="avoid-borrowing-label">
-        WHAT COULD CHANGE THIS?
-      </div>
+                <h2>
+                  The amount you requested is
+                  higher than the safer range.
+                </h2>
 
-      <ul>
-        <li>
-          Reduce existing monthly
-          debt obligations.
-        </li>
+                <div className="borrow-less-comparison">
 
-        <li>
-          Increase reliable monthly
-          income.
-        </li>
+                  <div>
+                    <span>
+                      Your requested amount
+                    </span>
 
-        <li>
-          Reassess once you have
-          more repayment capacity.
-        </li>
-      </ul>
+                    <strong>
+                      {formatMoney(
+                        result.lenderAmount.max >
+                          result.safeAmount.max
+                          ? result.recommendedAmount
+                          : result.safeAmount.max
+                      )}
+                    </strong>
+                  </div>
 
-    </div>
+                  <div>
+                    <span>
+                      Conservative maximum
+                    </span>
 
-  </section>
-) : (
-  <section className="negotiation-card">
+                    <strong>
+                      {formatMoney(
+                        result.safeAmount.max
+                      )}
+                    </strong>
+                  </div>
 
-    <div className="negotiation-eyebrow">
-      NEGOTIATION CARD
-    </div>
+                </div>
 
-    <h2>
-      What to take to the lender
-    </h2>
+                <p>
+                  Keeping the loan closer to the
+                  safer amount reduces the chance
+                  that the new EMI crowds out
+                  essential household spending or
+                  leaves you vulnerable to an income
+                  shock.
+                </p>
 
-    <div className="negotiation-values">
+              </section>
+            )}
 
-      <CardValue
-        label="Fair rate"
-        value={`${result.negotiationCard.fairRate.min}% – ${result.negotiationCard.fairRate.max}%`}
-      />
+            {/* =============================================
+                PRODUCT FIT
+               ============================================= */}
 
-      <CardValue
-        label="Safe EMI"
-        value={formatMoney(
-          result.negotiationCard.safeEmi
+            {!result.productFit.suitable && (
+              <section className="product-fit-card">
+
+                <div className="results-eyebrow">
+                  PRODUCT FIT
+                </div>
+
+                <h2>
+                  Consider a different loan
+                  structure.
+                </h2>
+
+                <p>
+                  {result.productFit.reason}
+                </p>
+
+              </section>
+            )}
+
+            {/* =============================================
+                TENURE OPTIONS
+               ============================================= */}
+
+            <section className="tenure-card">
+
+              <div className="results-eyebrow">
+                TENURE OPTIONS
+              </div>
+
+              <h2>
+                Choose the repayment period
+                carefully.
+              </h2>
+
+              <p className="section-description">
+                A longer tenure can reduce the
+                monthly EMI but usually increases
+                total interest paid.
+              </p>
+
+              <div className="tenure-options">
+
+                {result.tenureOptions.map(
+                  (option) => (
+                    <div
+                      key={option.months}
+                      className="tenure-option"
+                    >
+                      <div>
+                        <strong>
+                          {option.months}
+                          {" "}
+                          months
+                        </strong>
+
+                        <span>
+                          {formatMoney(
+                            option.emi
+                          )} / month
+                        </span>
+                      </div>
+
+                      <div className="tenure-interest">
+                        Total interest
+                        <strong>
+                          {formatMoney(
+                            option.totalInterest
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                  )
+                )}
+
+              </div>
+
+            </section>
+
+            {/* =============================================
+                STRESS TEST
+               ============================================= */}
+
+            <section className="stress-test-card">
+
+              <div className="results-eyebrow">
+                STRESS TEST
+              </div>
+
+              <div className="stress-test-header">
+
+                <div>
+                  <h2>
+                    What if income falls 20%?
+                  </h2>
+
+                  <p>
+                    We test whether the proposed
+                    EMI remains manageable after
+                    an income shock.
+                  </p>
+                </div>
+
+                <span
+                  className={`stress-status stress-${result.stressTest.affordabilityStatus}`}
+                >
+                  {result.stressTest.affordabilityStatus.toUpperCase()}
+                </span>
+
+              </div>
+
+              <div className="stress-test-metrics">
+
+                <div>
+                  <span>
+                    Current EMI
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      result.stressTest.baselineEmi
+                    )}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Stressed EMI
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      result.stressTest.stressedEmi
+                    )}
+                  </strong>
+                </div>
+
+              </div>
+
+              <p className="stress-explanation">
+                {result.stressTest.explanation}
+              </p>
+
+            </section>
+
+            {/* =============================================
+                NEGOTIATION CARD
+               ============================================= */}
+
+            <section className="negotiation-card">
+
+              <div className="results-eyebrow">
+                NEGOTIATION CARD
+              </div>
+
+              <h2>
+                What to ask the lender for
+              </h2>
+
+              <p className="section-description">
+                Use these as negotiation targets,
+                not guaranteed lender terms.
+              </p>
+
+              <div className="negotiation-grid">
+
+                <div>
+                  <span>
+                    Target amount
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      result.negotiationCard
+                        .recommendedAmount
+                    )}
+                  </strong>
+
+                  <small>
+                    Keeps the borrowing target
+                    aligned with your conservative
+                    affordability range.
+                  </small>
+                </div>
+
+                <div>
+                  <span>
+                    Target EMI
+                  </span>
+
+                  <strong>
+                    ≤{" "}
+                    {formatMoney(
+                      result.negotiationCard
+                        .safeEmi
+                    )}
+                  </strong>
+
+                  <small>
+                    This is the conservative new
+                    EMI ceiling.
+                  </small>
+                </div>
+
+                <div>
+                  <span>
+                    Fair rate
+                  </span>
+
+                  <strong>
+                    {
+                      result.negotiationCard
+                        .fairRate.min
+                    }
+                    % –{" "}
+                    {
+                      result.negotiationCard
+                        .fairRate.max
+                    }%
+                  </strong>
+
+                  <small>
+                    Indicative range based on the
+                    borrower profile and product.
+                  </small>
+                </div>
+
+                <div>
+                  <span>
+                    Target APR
+                  </span>
+
+                  <strong>
+                    ≤{" "}
+                    {
+                      result.negotiationCard
+                        .apr.max
+                    }%
+                  </strong>
+
+                  <small>
+                    Ask for the complete all-in
+                    APR and mandatory charges.
+                  </small>
+                </div>
+
+              </div>
+
+              <div className="negotiation-quote">
+                <div className="results-eyebrow">
+                  WHAT TO SAY
+                </div>
+
+                <p>
+                  "{result.negotiationCard
+                    .lenderQuoteResponse}"
+                </p>
+              </div>
+
+            </section>
+          </>
         )}
-      />
 
-      <CardValue
-        label="Target amount"
-        value={formatMoney(
-          result.negotiationCard.recommendedAmount
-        )}
-      />
+        {/* =================================================
+            LIMITATIONS
+           ================================================= */}
 
-    </div>
+        <section className="results-disclaimer">
 
-    <div className="negotiation-content">
-
-      <div className="apr-reminder">
-        Ask the lender for the{" "}
-        <strong>
-          all-in APR
-        </strong>
-        , including processing fee
-        and other mandatory charges,
-        before accepting the offer.
-      </div>
-
-      {result.negotiationCard
-        .lenderQuoteResponse && (
-        <div className="what-to-say">
-
-          <div className="what-to-say-label">
-            WHAT TO SAY
+          <div className="results-eyebrow">
+            IMPORTANT
           </div>
 
           <p>
-            “
-            {
-              result.negotiationCard
-                .lenderQuoteResponse
-            }
-            ”
+            This assessment uses the information
+            you provided and documented rules.
+            It does not verify income, credit
+            bureau data, lender policies or
+            collateral value. Actual eligibility,
+            pricing and approval can differ.
           </p>
 
-        </div>
-      )}
+        </section>
 
-    </div>
+        {/* =================================================
+            RESTART
+           ================================================= */}
 
-  </section>
-)}
+        <div className="results-actions">
 
-        {/* RESTART */}
-        <div className="restart-container">
           <button
             type="button"
-            onClick={onRestart}
             className="restart-button"
+            onClick={onRestart}
           >
             Start another assessment
           </button>
+
         </div>
 
       </div>
     </main>
   );
 }
-
 /* =========================================================
    METRIC CARD
    ========================================================= */
@@ -1024,25 +1377,3 @@ function MetricCard({
 /* =========================================================
    NEGOTIATION CARD VALUE
    ========================================================= */
-
-function CardValue({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="negotiation-value">
-
-      <div className="negotiation-value-label">
-        {label}
-      </div>
-
-      <div className="negotiation-value-number">
-        {value}
-      </div>
-
-    </div>
-  );
-}

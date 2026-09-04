@@ -73,14 +73,23 @@ export function buildBorrowerProfile(
           )
         : undefined,
 
-    collateral:
-      answers.collateralAvailable !== undefined
-        ? {
-            available: Boolean(
-              answers.collateralAvailable
-            ),
-          }
-        : undefined,
+   collateral:
+  answers.collateralAvailable !==
+    undefined
+    ? {
+        available: Boolean(
+          answers.collateralAvailable
+        ),
+
+        value:
+          answers.collateralValue !==
+            undefined
+            ? Number(
+                answers.collateralValue
+              )
+            : undefined,
+      }
+    : undefined,
 
     upcomingExpenses:
       answers.upcomingExpenses !== undefined

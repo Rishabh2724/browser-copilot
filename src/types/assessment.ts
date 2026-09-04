@@ -53,6 +53,8 @@ export interface AssessmentResult {
 
   safeAmount: Range;
 
+  requestedAmount: number;
+
   recommendedAmount: number;
   
   productFit: {

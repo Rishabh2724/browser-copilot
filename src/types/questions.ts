@@ -25,7 +25,14 @@ export interface Question {
 
   category: string;
 
-  text: string;
+  text:
+  | string
+  | ((
+      answers: Record<
+        string,
+        string | number | boolean | undefined
+      >
+    ) => string);
 
   description?: string;
 

@@ -62,7 +62,9 @@ export function assessBorrower(
 
   // 5. Determine the amount we actually recommend.
   const recommendedAmount =
-    decision.decision === "borrow"
+  decision.decision === "dont_borrow"
+    ? 0
+    : decision.decision === "borrow"
       ? profile.loan.amountWanted
       : Math.min(
           profile.loan.amountWanted,
@@ -88,12 +90,17 @@ export function assessBorrower(
 
   // 7. Calculate APR using the recommended amount.
   const apr =
-    calculateAPR(
-      recommendedAmount,
-      rate.fairRate,
-      getProcessingFee(profile),
-      recommendedTenure.months
-    );
+  recommendedAmount > 0
+    ? calculateAPR(
+        recommendedAmount,
+        rate.fairRate,
+        getProcessingFee(profile),
+        recommendedTenure.months
+      )
+    : {
+        min: 0,
+        max: 0,
+      };
 
   // 8. Run the final stress test using the amount
   // that we are actually recommending to the borrower.
@@ -145,7 +152,6 @@ export function assessBorrower(
   const lenderQuoteResponse =
     buildLenderQuoteResponse(
       decision.decision,
-      rate.fairRate,
       apr,
       Math.round(
         affordability.safeNewEmiCapacity
@@ -161,6 +167,9 @@ export function assessBorrower(
     safeAmount,
 
     recommendedAmount,
+
+    requestedAmount:
+    profile.loan.amountWanted,
 
     fairRate: rate.fairRate,
 
@@ -212,7 +221,6 @@ function getProcessingFee(
 
 function buildLenderQuoteResponse(
   decision: AssessmentResult["decision"],
-  fairRate: { min: number; max: number },
   apr: { min: number; max: number },
   safeEmi: number,
   recommendedAmount: number
