@@ -56,19 +56,112 @@ button:disabled {
    QUESTIONNAIRE
    ========================================================= */
 
+.question-card-content {
+  width: 100%;
+}
+
+/* =========================================================
+   SELECT OPTIONS
+   ========================================================= */
+
 .question-options {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.option-card {
+.question-option {
   width: 100%;
-  min-height: 72px;
+  min-height: 68px;
 
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+
+  padding: 17px 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  background: #ffffff;
+  color: #111827;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.question-option:hover {
+  border-color: #94a3b8;
+
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.06);
+
+  transform: translateY(-1px);
+}
+
+.question-option.selected {
+  border-color: #111827;
+
+  background: #111827;
+  color: #ffffff;
+
+  box-shadow:
+    0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.question-option-label {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.question-option-check {
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: 0 0 24px;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+  color: #111827;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   YES / NO
+   ========================================================= */
+
+.boolean-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.boolean-option {
+  min-height: 96px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
 
   padding: 18px 20px;
 
@@ -80,21 +173,28 @@ button:disabled {
 
   text-align: left;
 
+  cursor: pointer;
+
   transition:
     border-color 150ms ease,
     background 150ms ease,
-    transform 150ms ease,
-    box-shadow 150ms ease;
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
-.option-card:hover {
-  border-color: #9ca3af;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+.boolean-option:hover {
+  border-color: #94a3b8;
+
+  box-shadow:
+    0 4px 14px rgba(15, 23, 42, 0.06);
+
   transform: translateY(-1px);
 }
 
-.option-card-selected {
+.boolean-option.selected {
   border-color: #111827;
+
   background: #111827;
   color: #ffffff;
 
@@ -102,129 +202,23 @@ button:disabled {
     0 8px 20px rgba(15, 23, 42, 0.12);
 }
 
-.option-radio {
-  width: 22px;
-  height: 22px;
-
-  flex: 0 0 22px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: 1.5px solid #cbd5e1;
-  border-radius: 50%;
-
-  background: #ffffff;
-}
-
-.option-radio-selected {
-  border-color: #ffffff;
-}
-
-.option-radio-selected span {
-  width: 10px;
-  height: 10px;
-
-  border-radius: 50%;
-  background: #111827;
-}
-
-.option-content {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.option-title {
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-/* =========================================================
-   YES / NO
-   ========================================================= */
-
-.boolean-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.boolean-card {
-  min-height: 92px;
-
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  padding: 18px;
-
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-
-  background: #ffffff;
-  color: #111827;
-
-  text-align: left;
-
-  transition:
-    border-color 150ms ease,
-    background 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.boolean-card:hover {
-  border-color: #9ca3af;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-}
-
-.boolean-card-selected {
-  border-color: #111827;
-  background: #111827;
-  color: #ffffff;
-}
-
-.boolean-card span:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.boolean-card strong {
-  font-size: 16px;
-}
-
-.boolean-card small {
-  color: #64748b;
-  font-size: 13px;
-}
-
-.boolean-card-selected small {
-  color: #cbd5e1;
-}
-
-.boolean-icon {
-  width: 36px;
-  height: 36px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 10px;
-
-  background: #f1f5f9;
-  color: #111827;
-
-  font-size: 18px;
+.boolean-option-title {
+  font-size: 17px;
   font-weight: 700;
 }
 
-.boolean-card-selected .boolean-icon {
-  background: #ffffff;
-  color: #111827;
+.boolean-option-description {
+  margin-top: 5px;
+
+  color: #64748b;
+
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.boolean-option.selected
+.boolean-option-description {
+  color: #cbd5e1;
 }
 
 /* =========================================================
@@ -233,9 +227,7 @@ button:disabled {
 
 .number-input-wrapper {
   width: 100%;
-}
 
-.number-input-container {
   min-height: 76px;
 
   display: flex;
@@ -253,7 +245,7 @@ button:disabled {
     box-shadow 150ms ease;
 }
 
-.number-input-container:focus-within {
+.number-input-wrapper:focus-within {
   border-color: #111827;
 
   box-shadow:
@@ -281,6 +273,7 @@ button:disabled {
 
   font-size: 30px;
   font-weight: 600;
+
   letter-spacing: -0.5px;
 }
 
@@ -291,6 +284,7 @@ button:disabled {
 .large-number-input::-webkit-outer-spin-button,
 .large-number-input::-webkit-inner-spin-button {
   margin: 0;
+
   appearance: none;
 }
 
@@ -298,16 +292,17 @@ button:disabled {
   appearance: textfield;
 }
 
-.number-preview {
-  margin-top: 10px;
+.formatted-number {
+  margin: 10px 0 0;
 
   color: #64748b;
 
   font-size: 14px;
+  font-weight: 500;
 }
 
-.input-range {
-  margin-top: 10px;
+.input-hint {
+  margin: 10px 0 0;
 
   color: #94a3b8;
 
@@ -315,7 +310,7 @@ button:disabled {
 }
 
 /* =========================================================
-   MOBILE
+   MOBILE QUESTIONNAIRE
    ========================================================= */
 
 @media (max-width: 640px) {
@@ -323,75 +318,25 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .question-option {
+    min-height: 64px;
+
+    padding: 16px;
+  }
+
+  .boolean-option {
+    min-height: 82px;
+  }
+
   .large-number-input {
     font-size: 26px;
   }
 
-  .number-input-container {
+  .number-input-wrapper {
     min-height: 68px;
+
+    padding: 0 16px;
   }
-
-  .option-card {
-    min-height: 68px;
-    padding: 16px;
-  }
-}
-
-/* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
-
-button:focus-visible,
-input:focus-visible {
-  outline: 3px solid rgba(59, 130, 246, 0.35);
-  outline-offset: 2px;
-}
-
-/* =========================================================
-   RESULTS PAGE
-   ========================================================= */
-
-.results-page {
-  min-height: 100vh;
-  padding: 40px 20px 64px;
-}
-
-.results-container {
-  width: 100%;
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-.results-header {
-  margin-bottom: 28px;
-}
-
-.results-eyebrow {
-  margin-bottom: 8px;
-
-  color: #64748b;
-
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-
-.results-title {
-  margin: 0;
-
-  color: #0f172a;
-
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -1px;
-}
-
-.results-subtitle {
-  margin-top: 8px;
-
-  color: #64748b;
-
-  font-size: 15px;
 }
 
 /* =========================================================

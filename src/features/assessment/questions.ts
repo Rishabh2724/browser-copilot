@@ -10,6 +10,10 @@ export const LOAN_TYPES_BY_PURPOSE = {
       label: "Personal loan",
       value: "personal",
     },
+    {
+      label: "Gold loan",
+      value: "gold",
+    },
   ],
 
   home: [
@@ -21,6 +25,10 @@ export const LOAN_TYPES_BY_PURPOSE = {
       label: "Loan against property",
       value: "lap",
     },
+    {
+      label: "Gold loan",
+      value: "gold",
+    },
   ],
 
   productive: [
@@ -31,6 +39,10 @@ export const LOAN_TYPES_BY_PURPOSE = {
     {
       label: "Loan against property",
       value: "lap",
+    },
+    {
+      label: "Gold loan",
+      value: "gold",
     },
   ],
 
@@ -50,12 +62,20 @@ export const LOAN_TYPES_BY_PURPOSE = {
       label: "Personal loan",
       value: "personal",
     },
+    {
+      label: "Gold loan",
+      value: "gold",
+    },
   ],
 
   education: [
     {
       label: "Personal loan",
       value: "personal",
+    },
+    {
+      label: "Gold loan",
+      value: "gold",
     },
   ],
 
@@ -65,12 +85,12 @@ export const LOAN_TYPES_BY_PURPOSE = {
       value: "personal",
     },
     {
-      label: "Gold loan",
-      value: "gold",
-    },
-    {
       label: "Loan against property",
       value: "lap",
+    },
+    {
+      label: "Gold loan",
+      value: "gold",
     },
   ],
 } as const;
