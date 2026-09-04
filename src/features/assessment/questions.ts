@@ -521,8 +521,13 @@ export const QUESTIONS: Question[] = [
      * The UI should use the answer to
      * creditScoreKnown to decide visibility.
      */
-    showWhen: (profile) =>
-      profile.creditScore !== undefined,
+    showWhen: (profile) => {
+      const answers = profile as BorrowerProfile & {
+        creditScoreKnown?: boolean;
+      };
+
+    return answers.creditScoreKnown === true;
+},
   },
 
   // =====================================================

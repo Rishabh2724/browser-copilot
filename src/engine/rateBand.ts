@@ -95,7 +95,7 @@ export function calculateFairRate(
     }
   } else {
     reasons.push(
-      "Credit score is unknown, so no strong rate discount is assumed."
+      "Credit score is unknown, so the rate range is wider and no discount is assumed. Providing your credit score would narrow this estimate."
     );
   }
 
