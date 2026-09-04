@@ -12,7 +12,6 @@ import { calculateAPR } from "./apr";
 import { runIncomeStressTest } from "./stressTest";
 import { calculateEMI } from "./emi";
 import { assessProductFit } from "./productFit";
-
 export function assessBorrower(
   profile: BorrowerProfile
 ): AssessmentResult {
@@ -30,45 +29,67 @@ export function assessBorrower(
   const confidence = calculateConfidence(profile);
 
   // 2. Calculate tenure options before making the final decision.
-  const tenureOptions = calculateTenureOptions(profile);
+  
+  // 2. Determine the amount we can recommend before
+// evaluating the final repayment stress.
+const preliminaryRecommendedAmount =
+  Math.min(
+    profile.loan.amountWanted,
+    safeAmount.max
+  );
 
-  const initialTenure =
-    tenureOptions.find(
+// 3. Calculate tenure options for the amount
+// that we would actually recommend.
+const preliminaryTenureOptions =
+  calculateTenureOptions(
+    profile,
+    preliminaryRecommendedAmount
+  );
+
+// 4. Select the longest tenure that fits within
+// the conservative EMI ceiling.
+// This gives the borrower more monthly repayment room
+// without exceeding the safe EMI capacity.
+const preliminaryTenure =
+  [...preliminaryTenureOptions]
+    .reverse()
+    .find(
       (option) =>
         option.emi <=
         affordability.safeNewEmiCapacity
     ) ??
-    tenureOptions[tenureOptions.length - 1];
+  preliminaryTenureOptions[
+    preliminaryTenureOptions.length - 1
+  ];
 
-  // 3. Run a preliminary stress test using the requested amount.
-  const initialStressTest =
-    runIncomeStressTest(
-      profile,
-      calculateEMI(
-        profile.loan.amountWanted,
-        (rate.fairRate.min +
-          rate.fairRate.max) / 2,
-        initialTenure.months
-      )
-    );
+// 5. Run the stress test using the same
+// amount + tenure that the recommendation will use.
+const initialStressTest =
+  runIncomeStressTest(
+    profile,
+    calculateEMI(
+      preliminaryRecommendedAmount,
+      (rate.fairRate.min +
+        rate.fairRate.max) / 2,
+      preliminaryTenure.months
+    )
+  );
 
-  // 4. Make the borrowing decision using affordability,
-  // safe amount and stress-test results.
-  const decision =
-    determineBorrowDecision(
-      profile,
-      initialStressTest
-    );
+// 6. Make the borrowing decision using
+// affordability, safe amount and stress test.
+const decision =
+  determineBorrowDecision(
+    profile,
+    initialStressTest
+  );
 
-  // 5. Determine the amount we actually recommend.
-  const recommendedAmount =
+// 7. Final recommended amount.
+// Don't recommend borrowing if the decision is Don't Borrow.
+const recommendedAmount =
   decision.decision === "dont_borrow"
     ? 0
-    : Math.min(
-        profile.loan.amountWanted,
-        safeAmount.max
-      );
-      
+    : preliminaryRecommendedAmount;
+
   const recommendedTenureOptions =
     calculateTenureOptions(
       profile,
@@ -77,15 +98,16 @@ export function assessBorrower(
 
   // 6. Select a tenure that fits the conservative EMI ceiling.
   const recommendedTenure =
-    recommendedTenureOptions.find(
+  [...recommendedTenureOptions]
+    .reverse()
+    .find(
       (option) =>
         option.emi <=
         affordability.safeNewEmiCapacity
     ) ??
-    recommendedTenureOptions[
-      recommendedTenureOptions.length - 1
-    ];
-
+  recommendedTenureOptions[
+    recommendedTenureOptions.length - 1
+  ];
   // 7. Calculate APR using the recommended amount.
   const apr =
   recommendedAmount > 0
