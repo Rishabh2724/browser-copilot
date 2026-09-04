@@ -74,7 +74,7 @@ export function validateAnswer(
       return { valid: true };
     }
 
-    case "monthlyIncome": {
+        case "monthlyIncome": {
       const income = Number(value);
 
       if (
@@ -89,26 +89,44 @@ export function validateAnswer(
         };
       }
 
-      const requestedLoan =
-        Number(answers.loanAmount ?? 0);
+      return {
+        valid: true,
+      };
+    }
+
+    case "monthlyIncomeMax": {
+      const maxIncome = Number(value);
+      const minIncome = Number(
+        answers.monthlyIncome ?? 0
+      );
 
       if (
-        requestedLoan > 0 &&
-        requestedLoan > income * 100
+        !Number.isFinite(maxIncome) ||
+        maxIncome <= 0
       ) {
         return {
           valid: false,
           severity: "error",
           message:
-            `₹${requestedLoan.toLocaleString(
-              "en-IN"
-            )} is extremely high relative to monthly income of ₹${income.toLocaleString(
-              "en-IN"
-            )}. Enter your actual income or loan amount.`,
+            "Highest monthly income must be greater than ₹0.",
         };
       }
 
-      return { valid: true };
+      if (
+        minIncome > 0 &&
+        maxIncome < minIncome
+      ) {
+        return {
+          valid: false,
+          severity: "error",
+          message:
+            "Highest monthly income cannot be lower than your lowest monthly income.",
+        };
+      }
+
+      return {
+        valid: true,
+      };
     }
 
     case "loanAmount": {

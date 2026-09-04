@@ -238,9 +238,22 @@ export function AssessmentFlow() {
   const shouldStopForNoCashFlow = (
     nextAnswers: Answers
   ): boolean => {
-    const income = Number(
-      nextAnswers.monthlyIncome ?? 0
-    );
+    
+    const incomeMin = Number(
+  nextAnswers.monthlyIncome ?? 0
+);
+
+const incomeMax = Number(
+  nextAnswers.monthlyIncomeMax ??
+    nextAnswers.monthlyIncome ??
+    0
+);
+
+const income =
+  Math.min(
+    incomeMin,
+    incomeMax
+  );
 
     const expenses = Number(
       nextAnswers.householdExpenses ?? 0

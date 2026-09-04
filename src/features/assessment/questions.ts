@@ -378,12 +378,33 @@ export const QUESTIONS: Question[] = [
   // 6. INCOME
   // =====================================================
 
-  {
+    {
     id: "monthlyIncome",
     category: "Income",
-    text: "What is your monthly income?",
+    text: "What is your monthly income range?",
     description:
-      "Use your typical take-home income. If it changes significantly, we'll ask about the variation.",
+      "Enter the lowest and highest amount you typically earn in a month. We use the range to estimate how predictable your income is.",
+    type: "currency",
+    required: true,
+    min: 0,
+    max: 10000000,
+    step: 1000,
+    affects: [
+      "decision",
+      "sanction",
+      "safeAmount",
+      "rate",
+      "emi",
+      "confidence",
+    ],
+  },
+
+  {
+    id: "monthlyIncomeMax",
+    category: "Income",
+    text: "What is the highest you typically earn in a month?",
+    description:
+      "Use a normal high month, not an exceptional one-off month.",
     type: "currency",
     required: true,
     min: 0,
@@ -403,35 +424,6 @@ export const QUESTIONS: Question[] = [
   // 7. INCOME STABILITY
   // =====================================================
 
-  {
-    id: "incomeStability",
-    category: "Income",
-    text: "How predictable is that income?",
-    description:
-      "More variable income requires a larger safety margin.",
-    type: "select",
-    required: true,
-    options: [
-      {
-        label: "Stable",
-        value: "stable",
-      },
-      {
-        label: "Variable",
-        value: "variable",
-      },
-      {
-        label: "Highly variable",
-        value: "highly_variable",
-      },
-    ],
-    affects: [
-      "decision",
-      "safeAmount",
-      "rate",
-      "confidence",
-    ],
-  },
 
   // =====================================================
   // 8. HOUSEHOLD EXPENSES

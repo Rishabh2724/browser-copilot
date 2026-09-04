@@ -5,12 +5,87 @@ export type Answers = Record<
   string | number | boolean | undefined
 >;
 
+function deriveIncomeStability(
+  min: number,
+  max: number
+): BorrowerProfile["monthlyIncome"]["stability"] {
+  if (
+    !Number.isFinite(min) ||
+    !Number.isFinite(max) ||
+    min <= 0 ||
+    max <= 0
+  ) {
+    return "highly_variable";
+  }
+
+  const normalizedMin = Math.min(min, max);
+  const normalizedMax = Math.max(min, max);
+
+  const midpoint =
+    (normalizedMin + normalizedMax) / 2;
+
+  if (midpoint <= 0) {
+    return "highly_variable";
+  }
+
+  const variationRatio =
+    (normalizedMax - normalizedMin) /
+    midpoint;
+
+  /*
+   * Income variation thresholds:
+   *
+   * <= 20%  -> stable
+   * <= 40%  -> variable
+   * > 40%   -> highly variable
+   *
+   * These are application assumptions used
+   * to create a conservative affordability estimate.
+   */
+  if (variationRatio <= 0.20) {
+    return "stable";
+  }
+
+  if (variationRatio <= 0.40) {
+    return "variable";
+  }
+
+  return "highly_variable";
+}
+
 export function buildBorrowerProfile(
   answers: Answers
 ): BorrowerProfile {
-  const income = Number(
+  const rawIncomeMin = Number(
     answers.monthlyIncome ?? 0
   );
+
+  const rawIncomeMax = Number(
+    answers.monthlyIncomeMax ??
+      answers.monthlyIncome ??
+      0
+  );
+
+  /*
+   * Normalize the range so min is always
+   * lower than max even if the borrower
+   * accidentally enters them in reverse.
+   */
+  const incomeMin = Math.min(
+    rawIncomeMin,
+    rawIncomeMax
+  );
+
+  const incomeMax = Math.max(
+    rawIncomeMin,
+    rawIncomeMax
+  );
+
+  const incomeStability =
+    deriveIncomeStability(
+      incomeMin,
+      incomeMax
+    );
 
   const employmentType =
     answers.employmentType as BorrowerProfile["employmentType"];
@@ -23,16 +98,16 @@ export function buildBorrowerProfile(
   );
 
   return {
-    age: Number(answers.age ?? 0),
+    age: Number(
+      answers.age ?? 0
+    ),
 
     employmentType,
 
     monthlyIncome: {
-      min: income,
-      max: income,
-      stability:
-        (answers.incomeStability ??
-          "variable") as BorrowerProfile["monthlyIncome"]["stability"],
+      min: incomeMin,
+      max: incomeMax,
+      stability: incomeStability,
     },
 
     monthlyHouseholdExpenses: Number(
@@ -52,9 +127,11 @@ export function buildBorrowerProfile(
 
     loan: {
       type: loanType,
+
       amountWanted: Number(
         answers.loanAmount ?? 0
       ),
+
       purpose: String(
         answers.purpose ?? ""
       ),
@@ -63,36 +140,40 @@ export function buildBorrowerProfile(
     creditScore:
       answers.creditScoreKnown === true &&
       answers.creditScore !== undefined
-        ? Number(answers.creditScore)
+        ? Number(
+            answers.creditScore
+          )
         : undefined,
 
     emergencySavingsMonths:
-      answers.emergencySavingsMonths !== undefined
+      answers.emergencySavingsMonths !==
+      undefined
         ? Number(
             answers.emergencySavingsMonths
           )
         : undefined,
 
-   collateral:
-  answers.collateralAvailable !==
-    undefined
-    ? {
-        available: Boolean(
-          answers.collateralAvailable
-        ),
+    collateral:
+      answers.collateralAvailable !==
+      undefined
+        ? {
+            available: Boolean(
+              answers.collateralAvailable
+            ),
 
-        value:
-          answers.collateralValue !==
-            undefined
-            ? Number(
-                answers.collateralValue
-              )
-            : undefined,
-      }
-    : undefined,
+            value:
+              answers.collateralValue !==
+                undefined
+                ? Number(
+                    answers.collateralValue
+                  )
+                : undefined,
+          }
+        : undefined,
 
     upcomingExpenses:
-      answers.upcomingExpenses !== undefined
+      answers.upcomingExpenses !==
+      undefined
         ? Number(
             answers.upcomingExpenses
           )
@@ -100,28 +181,34 @@ export function buildBorrowerProfile(
 
     pastBounces:
       answers.pastBounces !== undefined
-        ? Number(answers.pastBounces)
+        ? Number(
+            answers.pastBounces
+          )
         : undefined,
 
     employmentTenureMonths:
-      answers.employmentTenureMonths !== undefined
+      answers.employmentTenureMonths !==
+      undefined
         ? Number(
             answers.employmentTenureMonths
           )
         : undefined,
 
     business:
-      employmentType === "self_employed"
+      employmentType ===
+      "self_employed"
         ? {
             yearsOperating:
-              answers.businessYears !== undefined
+              answers.businessYears !==
+              undefined
                 ? Number(
                     answers.businessYears
                   )
                 : undefined,
 
             annualItrIncome:
-              answers.annualItrIncome !== undefined
+              answers.annualItrIncome !==
+              undefined
                 ? Number(
                     answers.annualItrIncome
                   )
