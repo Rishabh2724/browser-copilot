@@ -1,5 +1,7 @@
 # React + TypeScript + Vite
 
+For a plain-English explanation of every borrower input, formula, threshold, and current engine limitation, see [Loan engine documentation](LOAN_ENGINE_DOCUMENTATION.md).
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
