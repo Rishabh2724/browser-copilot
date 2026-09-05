@@ -886,7 +886,24 @@ function AssessmentResults({
 
               <div className="avoid-borrowing-metric">
                 <span>
-                  Borrower-safe amount
+                  Amount you asked for
+                </span>
+
+                <strong>
+                  {formatMoney(
+                    result.requestedAmount
+                  )}
+                </strong>
+
+                <p>
+                  This is the amount entered in
+                  your assessment.
+                </p>
+              </div>
+
+              <div className="avoid-borrowing-metric">
+                <span>
+                  Conservative safe capacity
                 </span>
 
                 <strong>
@@ -930,26 +947,25 @@ function AssessmentResults({
               <MetricCard
                 label="Amount you asked for"
                 value={formatMoney(
-                  result.recommendedAmount ===
-                    0
-                    ? result.safeAmount.max
-                    : result.recommendedAmount
+                  result.requestedAmount
                 )}
-                explanation={
-                  isBorrowLess
-                    ? "This is compared against the conservative amount we believe your current cash flow can support."
-                    : "This is the amount used for the borrowing recommendation."
-                }
+                explanation="This is the amount entered in your assessment."
               />
 
               <MetricCard
-                label="Borrower-safe range"
-                value={`${formatMoney(
-                  result.safeAmount.min
-                )} – ${formatMoney(
+                label="Conservative safe capacity"
+                value={`Up to ${formatMoney(
                   result.safeAmount.max
                 )}`}
-                explanation="This range is intentionally more conservative than a lender-style estimate and leaves room for household costs and existing debt."
+                explanation="This is the maximum amount the conservative affordability calculation supports under the current assumptions."
+              />
+
+              <MetricCard
+                label="Recommended amount"
+                value={formatMoney(
+                  result.recommendedAmount
+                )}
+                explanation="This is the amount used for the borrowing recommendation."
               />
 
               <MetricCard
@@ -997,8 +1013,8 @@ function AssessmentResults({
                 </div>
 
                 <h2>
-                  The amount you requested is
-                  higher than the safer range.
+                  Your requested amount is above
+                  the conservative safe capacity.
                 </h2>
 
                 <div className="borrow-less-comparison">
@@ -1010,10 +1026,7 @@ function AssessmentResults({
 
                     <strong>
                       {formatMoney(
-                        result.lenderAmount.max >
-                          result.safeAmount.max
-                          ? result.recommendedAmount
-                          : result.safeAmount.max
+                        result.requestedAmount
                       )}
                     </strong>
                   </div>
@@ -1033,8 +1046,11 @@ function AssessmentResults({
                 </div>
 
                 <p>
-                  Keeping the loan closer to the
-                  safer amount reduces the chance
+                  The {formatMoney(result.requestedAmount)} you
+                  requested is above the conservative borrowing
+                  capacity of {formatMoney(result.safeAmount.max)}.
+                  Keeping the loan closer to the recommended amount
+                  reduces the chance
                   that the new EMI crowds out
                   essential household spending or
                   leaves you vulnerable to an income
@@ -1215,6 +1231,24 @@ function AssessmentResults({
 
                 <div>
                   <span>
+                    Requested amount
+                  </span>
+
+                  <strong>
+                    {formatMoney(
+                      result.negotiationCard
+                        .requestedAmount
+                    )}
+                  </strong>
+
+                  <small>
+                    The amount entered in your
+                    assessment.
+                  </small>
+                </div>
+
+                <div>
+                  <span>
                     Target amount
                   </span>
 
@@ -1228,7 +1262,7 @@ function AssessmentResults({
                   <small>
                     Keeps the borrowing target
                     aligned with your conservative
-                    affordability range.
+                    safe capacity.
                   </small>
                 </div>
 

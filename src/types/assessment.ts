@@ -52,6 +52,7 @@ export interface NegotiationCard {
   fairRate: Range;
   apr: Range;
   safeEmi: number;
+  requestedAmount: number;
   recommendedAmount: number;
 
   reasons: Reason[];

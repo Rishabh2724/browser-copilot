@@ -229,6 +229,8 @@ const recommendedAmount =
           affordability.safeNewEmiCapacity
         ),
 
+      requestedAmount: profile.loan.amountWanted,
+
       recommendedAmount,
 
       reasons,

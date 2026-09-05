@@ -1236,3 +1236,293 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   ASSESSMENT RESULTS
+   ========================================================= */
+
+.results-page {
+  min-height: 100vh;
+  padding: 48px 20px 64px;
+}
+
+.results-container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.results-header {
+  margin-bottom: 28px;
+}
+
+.results-eyebrow {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.results-title {
+  margin: 8px 0 0;
+  color: #0f172a;
+  font-size: 42px;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+}
+
+.results-subtitle {
+  max-width: 650px;
+  margin: 14px 0 0;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.result-card,
+.borrow-less-card,
+.product-fit-card,
+.tenure-card,
+.stress-test-card,
+.results-disclaimer {
+  margin-top: 16px;
+}
+
+.result-card-borrow {
+  border-color: #bbf7d0;
+}
+
+.result-card-borrow_less {
+  border-color: #fde68a;
+}
+
+.result-card-dont_borrow {
+  border-color: #fecaca;
+}
+
+.borrow-less-card,
+.product-fit-card,
+.tenure-card,
+.stress-test-card,
+.results-disclaimer {
+  padding: 28px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.borrow-less-card {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.borrow-less-card h2,
+.product-fit-card h2,
+.tenure-card h2,
+.stress-test-card h2 {
+  margin: 7px 0 0;
+  color: #0f172a;
+  font-size: 26px;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+}
+
+.borrow-less-card > p,
+.product-fit-card > p,
+.stress-explanation,
+.results-disclaimer p {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.borrow-less-comparison,
+.avoid-borrowing-grid,
+.stress-test-metrics,
+.negotiation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.borrow-less-comparison > div,
+.avoid-borrowing-metric,
+.stress-test-metrics > div {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.borrow-less-comparison span,
+.avoid-borrowing-metric span,
+.stress-test-metrics span,
+.negotiation-grid span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.borrow-less-comparison strong,
+.avoid-borrowing-metric strong,
+.stress-test-metrics strong {
+  display: block;
+  margin-top: 7px;
+  color: #0f172a;
+  font-size: 22px;
+  letter-spacing: -0.4px;
+}
+
+.avoid-borrowing-lead {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.avoid-borrowing-metric p,
+.avoid-borrowing-note p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.avoid-borrowing-note {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #fee2e2;
+  color: #7f1d1d;
+}
+
+.tenure-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.tenure-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 13px;
+  background: #f8fafc;
+}
+
+.tenure-option strong {
+  color: #0f172a;
+}
+
+.tenure-option span,
+.tenure-interest {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.stress-test-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.stress-safe {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.stress-tight {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.stress-unsafe {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.negotiation-card .results-eyebrow,
+.negotiation-card .section-description {
+  color: #cbd5e1;
+}
+
+.negotiation-grid > div {
+  padding: 16px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.negotiation-grid span,
+.negotiation-grid small {
+  color: #cbd5e1;
+}
+
+.negotiation-grid strong {
+  display: block;
+  margin-top: 7px;
+  color: #ffffff;
+  font-size: 21px;
+}
+
+.negotiation-grid small {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.negotiation-quote {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.negotiation-quote p {
+  margin: 8px 0 0;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 700px) {
+  .results-page {
+    padding: 28px 14px 48px;
+  }
+
+  .results-title {
+    font-size: 32px;
+  }
+
+  .borrow-less-card,
+  .product-fit-card,
+  .tenure-card,
+  .stress-test-card,
+  .results-disclaimer,
+  .negotiation-card,
+  .avoid-borrowing-card {
+    padding: 22px;
+  }
+
+  .borrow-less-comparison,
+  .avoid-borrowing-grid,
+  .stress-test-metrics,
+  .negotiation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stress-test-header,
+  .tenure-option {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
